@@ -19,7 +19,7 @@
     button:disabled { background: #94a3b8; cursor: not-allowed; }
     .btn-green { background: #059669; }
     .btn-green:hover { background: #047857; }
-    #chat-box { height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; background: #f8fafc; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+    #chat-box { height: 400px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; background: #f8fafc; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
     .msg { padding: 12px 16px; border-radius: 8px; line-height: 1.6; max-width: 85%; white-space: pre-wrap; font-size: 14px; }
     .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; }
     .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
@@ -29,13 +29,12 @@
     .option-label:hover { background: #f1f5f9; }
     .explanation { margin-top: 12px; padding: 10px 12px; background: #f8fafc; border-left: 4px solid #2563eb; font-size: 13px; }
   </style>
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
 <div class="container">
-  <h1>日語文法自主學習中心</h1>
+  <h1>日語文法學習助手</h1>
 
   <!-- 區塊 1: 金鑰與 Drive 授權 -->
   <div id="section-auth" class="card">
@@ -56,12 +55,12 @@
   <div id="section-plan" class="card hidden">
     <h3>制定專屬學習日程表</h3>
     <label for="input-goal">學習目標</label>
-    <input type="text" id="input-goal" placeholder="例如：JLPT N3 合格、日常生活旅遊會話、商務基礎敬語">
+    <input type="text" id="input-goal" placeholder="例如：JLPT N3 合格、日常生活會話、商務日語接續">
 
     <label for="input-days">規劃天數</label>
     <input type="number" id="input-days" value="14" min="1" max="90">
 
-    <button id="btn-create-plan" type="button">由 Gemini 自動規劃學習大綱</button>
+    <button id="btn-create-plan" type="button">由 Gemini 3.7 Flash 規劃學習大綱</button>
   </div>
 
   <!-- 區塊 3: 學習與測驗介面 -->
@@ -74,7 +73,7 @@
     <div id="chat-box"></div>
 
     <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-      <input type="text" id="input-message" placeholder="針對上方內容有疑問可直接發問..." style="margin-bottom: 0;">
+      <input type="text" id="input-message" placeholder="針對上方內容有疑問可直接發問 (Gemini 3.1 Flash-Lite 回覆)..." style="margin-bottom: 0;">
       <button id="btn-send-message" type="button">傳送</button>
       <button id="btn-trigger-quiz" type="button" class="btn-green">今日小測驗</button>
     </div>
@@ -86,7 +85,6 @@
 <script type="module">
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
-  // 全域狀態維護
   const state = {
     geminiKey: "",
     accessToken: null,
@@ -114,7 +112,7 @@
   const textCurrentTitle = document.getElementById("text-current-title");
   const quizContainer = document.getElementById("quiz-container");
 
-  // 1. 綁定事件監聽（完全替代 HTML onclick）
+  // 事件綁定
   btnLogin.addEventListener("click", handleGoogleAuth);
   btnCreatePlan.addEventListener("click", handleGeneratePlan);
   btnSendMessage.addEventListener("click", handleSendMessage);
@@ -125,7 +123,7 @@
     if (e.key === "Enter") handleSendMessage();
   });
 
-  // 2. Google Identity Services 驗證流程
+  // 1. Google 授權與身分驗證
   function handleGoogleAuth() {
     const clientId = inputClientId.value.trim();
     const geminiKey = inputGeminiKey.value.trim();
@@ -136,13 +134,13 @@
     }
 
     if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
-      alert("Google 身分驗證元件載入中，請稍候 3 秒後再試。");
+      alert("Google 驗證模組載入中，請稍候再試。");
       return;
     }
 
     state.geminiKey = geminiKey;
     btnLogin.disabled = true;
-    btnLogin.textContent = "連線驗證中...";
+    btnLogin.textContent = "驗證中...";
 
     const client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
@@ -162,7 +160,7 @@
     client.requestAccessToken();
   }
 
-  // 3. Google Drive 檔案讀取與建立
+  // 2. Google Drive 讀寫
   async function syncUserDataFromDrive() {
     try {
       const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`)}`;
@@ -178,7 +176,6 @@
         });
         state.userData = await fileContentRes.json();
       } else {
-        // 首次登入，建立初始雲端設定檔
         state.userData = {
           geminiKey: state.geminiKey,
           plan: null,
@@ -203,7 +200,7 @@
       renderCurrentState();
     } catch (err) {
       console.error(err);
-      alert("存取 Google Drive 失敗，請確認 Client ID 授權來源網址設定正確。");
+      alert("存取 Google Drive 失敗，請確認 Client ID 與授權來源設定。");
       btnLogin.disabled = false;
       btnLogin.textContent = "連接 Google Drive 並進入系統";
     }
@@ -221,7 +218,6 @@
     });
   }
 
-  // 4. 介面流程判斷
   function renderCurrentState() {
     if (!state.userData.plan || state.userData.plan.length === 0) {
       planSection.classList.remove("hidden");
@@ -233,7 +229,7 @@
     }
   }
 
-  // 5. 由 Gemini 生成日程規劃
+  // 3. 規劃學習大綱 (使用 gemini-3.7-flash)
   async function handleGeneratePlan() {
     const goal = document.getElementById("input-goal").value.trim();
     const days = document.getElementById("input-days").value;
@@ -244,38 +240,39 @@
     }
 
     btnCreatePlan.disabled = true;
-    btnCreatePlan.textContent = "正在生成學習規劃...";
+    btnCreatePlan.textContent = "正在生成學習規劃 (Gemini 3.7 Flash)...";
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      const prompt = `你是一位專業的日語教學名師。請根據目標「${goal}」規劃 ${days} 天的每日學習主題。
+      const prompt = `你是一位專業的日語教學專家。請根據目標「${goal}」規劃 ${days} 天的每日學習大綱。
 要求：
-1. 每日主題須具體包含特定文法、接續詞或情境表達。
-2. 輸出必須是乾淨的 JSON 字串陣列，格式範例：["第 1 天: 基礎助詞辨析", "第 2 天: 動詞て形變化"]
-3. 不要包含任何開頭開場白或結尾解釋。`;
+1. 每日主題具體包含特定文法、接續詞或語境表現。
+2. 輸出格式必須是純 JSON 字串陣列，格式如：["第 1 天: 主題名稱", "第 2 天: 主題名稱", ...]`;
 
       const res = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt
+        model: "gemini-3.7-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json"
+        }
       });
 
-      const cleanJson = res.text.replace(/```json/g, "").replace(/```/g, "").trim();
-      state.userData.plan = JSON.parse(cleanJson);
+      state.userData.plan = JSON.parse(res.text.trim());
       state.userData.currentIndex = 0;
 
       await saveProgressToDrive();
       btnCreatePlan.disabled = false;
-      btnCreatePlan.textContent = "由 Gemini 自動規劃學習大綱";
+      btnCreatePlan.textContent = "由 Gemini 3.7 Flash 規劃學習大綱";
       renderCurrentState();
     } catch (e) {
       console.error(e);
-      alert("大綱生成出錯，請重試：" + e.message);
+      alert("規劃生成失敗：" + e.message);
       btnCreatePlan.disabled = false;
-      btnCreatePlan.textContent = "由 Gemini 自動規劃學習大綱";
+      btnCreatePlan.textContent = "由 Gemini 3.7 Flash 規劃學習大綱";
     }
   }
 
-  // 6. 今日教學對話
+  // 4. 教材內容生成 (gemini-3.7-flash) & 建立即時問答 (gemini-3.1-flash-lite)
   async function startDailyLesson() {
     chatBox.innerHTML = "";
     quizContainer.innerHTML = "";
@@ -283,30 +280,40 @@
     const title = state.userData.plan[idx] || "課程結束";
     textCurrentTitle.textContent = title;
 
-    appendMessage("system", `載入今日單元：${title}`);
-
-    const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-    state.chatInstance = ai.chats.create({
-      model: "gemini-2.5-flash",
-      config: {
-        systemInstruction: "你是耐心的日語專任家教。請清晰拆解接續規則、動詞形態變化與助詞差異，並給出易理解的生動例句。"
-      }
-    });
-
-    const initPrompt = `請為今日進度「${title}」展開完整教學內容：
-1. 【核心句型與規則】：說明動詞/形容詞形態、接續助詞及核心含義。
-2. 【情境例句】：提供 3 個生活或檢定常見例句，附假名與中文翻譯。
-3. 【常犯錯誤】：列出 1~2 個台灣學習者最容易混淆的點。
-完成後提示學生：若有不懂之處可直接提問，確認明白後請點選「今日小測驗」。`;
+    appendMessage("system", `正在生成今日教材【${title}】(Gemini 3.7 Flash)...`);
 
     try {
-      const res = await state.chatInstance.sendMessage({ message: initPrompt });
-      appendMessage("bot", res.text);
+      const ai = new GoogleGenAI({ apiKey: state.geminiKey });
+
+      // 使用 3.7 Flash 產出深度教材內容
+      const lessonPrompt = `請為今日主題「${title}」撰寫完整的教學內容：
+1. 【核心概念與接續規則】：詳細說明動詞/形容詞形態、接續助詞及核心含意。
+2. 【結構解析與常犯錯誤】：剖析句型結構，指出中文母語者最容易犯錯的助詞誤用。
+3. 【情境例句】：提供 3~4 個生活實用例句（包含假名標記與中文翻譯）。
+4. 【總結口訣】：提煉一句話記憶重點。
+說明完後提示學生：若有不懂之處可直接提問，確認理解後可點選「今日小測驗」。`;
+
+      const lessonRes = await ai.models.generateContent({
+        model: "gemini-3.7-flash",
+        contents: lessonPrompt
+      });
+
+      appendMessage("bot", lessonRes.text);
+
+      // 後續的互動問答交由速度快、成本低的 3.1 Flash-Lite 負責
+      state.chatInstance = ai.chats.create({
+        model: "gemini-3.1-flash-lite",
+        config: {
+          systemInstruction: `你是親切的日語助教。目前正在進行單元「${title}」的學習，教材內容如下：\n\n${lessonRes.text}\n\n請根據上方教材與使用者的提問給予精準、易懂的繁體中文解答。`
+        }
+      });
     } catch (err) {
-      appendMessage("system", "教材載入失敗，請確認 API Key 額度或網路狀態。");
+      console.error(err);
+      appendMessage("system", "教材載入失敗：" + err.message);
     }
   }
 
+  // 5. 學生提問回答 (使用 gemini-3.1-flash-lite)
   async function handleSendMessage() {
     const text = inputMessage.value.trim();
     if (!text || !state.chatInstance) return;
@@ -330,7 +337,7 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // 7. 生成隨堂測驗
+  // 6. 生成測驗 (使用 gemini-3.7-flash)
   async function handleGenerateQuiz() {
     const idx = state.userData.currentIndex;
     const title = state.userData.plan[idx];
@@ -339,27 +346,30 @@
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      const prompt = `針對「${title}」出 2 題小測驗。
-嚴格返回 JSON 格式如下，不可包含額外文字：
+      const prompt = `針對日語文法主題「${title}」設計 2 題小測驗。
+嚴格返回符合以下結構的 JSON 陣列：
 [
   {
     "question": "題目描述",
     "options": ["A. 選項1", "B. 選項2", "C. 選項3", "D. 選項4"],
     "answer": "A",
-    "explanation": "選項解析與中文說明"
+    "explanation": "選項解析與句型說明"
   }
 ]`;
 
       const res = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt
+        model: "gemini-3.7-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json"
+        }
       });
 
-      const clean = res.text.replace(/```json/g, "").replace(/```/g, "").trim();
-      const list = JSON.parse(clean);
+      const list = JSON.parse(res.text.trim());
       renderQuizCards(list);
     } catch (e) {
-      alert("測驗生成失敗，請稍候重試");
+      console.error(e);
+      alert("測驗生成失敗，請稍候重試：" + e.message);
     } finally {
       btnTriggerQuiz.disabled = false;
       btnTriggerQuiz.textContent = "今日小測驗";
@@ -380,7 +390,7 @@
       item.options.forEach(opt => {
         const lbl = document.createElement("label");
         lbl.className = "option-label";
-        lbl.innerHTML = `<input type="radio" name="opt_${index}" value="${opt[0]}"> ${opt}`;
+        lbl.innerHTML = `<input type="radio" name="q_${index}" value="${opt[0]}"> ${opt}`;
         card.appendChild(lbl);
       });
 
@@ -403,13 +413,13 @@
     });
   }
 
-  // 8. 進入下一天
+  // 7. 推進天數
   async function handleNextDay() {
     if (state.userData.currentIndex + 1 >= state.userData.plan.length) {
-      alert("恭喜你！已經完成本階段的所有學習日程！");
+      alert("恭喜你！已經完成本計畫的所有學習主題！");
       return;
     }
-    if (confirm("確定要儲存進度並前往下一天的學習主題嗎？")) {
+    if (confirm("確定前往下一天的學習主題嗎？進度將同步至 Google 雲端。")) {
       state.userData.currentIndex += 1;
       await saveProgressToDrive();
       startDailyLesson();
