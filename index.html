@@ -3,216 +3,295 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>日語文法學習助手</title>
+  <title>日語文法學習工作台</title>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; background: #f1f5f9; color: #1e293b; }
-    .container { max-width: 860px; margin: 0 auto; }
-    .card { background: #ffffff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; color: #1e293b; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+    
+    /* 頂部導航列 */
+    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    .status-badge { font-size: 12px; background: #ecfdf5; color: #059669; padding: 4px 8px; border-radius: 9999px; font-weight: 500; }
+
+    /* 主應用區域：雙欄佈局 */
+    #app-layout { display: flex; flex: 1; height: calc(100vh - 57px); overflow: hidden; }
     .hidden { display: none !important; }
-    h1, h2, h3 { margin-top: 0; color: #0f172a; }
-    label { font-weight: 600; font-size: 14px; margin-bottom: 6px; display: block; }
-    input, select, textarea { width: 100%; padding: 10px 12px; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
-    input:focus, textarea:focus { outline: none; border-color: #2563eb; ring: 2px #93c5fd; }
-    button { background: #2563eb; color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+
+    /* 通用元件 */
+    button { background: #2563eb; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #94a3b8; cursor: not-allowed; }
     .btn-green { background: #059669; }
     .btn-green:hover { background: #047857; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
     .btn-gray { background: #64748b; }
     .btn-gray:hover { background: #475569; }
-    
-    /* 日程列表樣式 */
-    .schedule-list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
-    .schedule-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; transition: all 0.2s; }
-    .schedule-item:hover { border-color: #94a3b8; background: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .schedule-info { flex: 1; margin-right: 16px; }
-    .schedule-title { font-weight: 600; font-size: 16px; color: #0f172a; }
-    .schedule-status { font-size: 12px; margin-top: 4px; display: inline-block; padding: 2px 8px; border-radius: 9999px; }
-    .status-completed { background: #dcfce7; color: #166534; }
-    .status-pending { background: #f1f5f9; color: #64748b; }
 
-    /* 對話與 Markdown 排版樣式 */
-    #chat-box { height: 440px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; background: #f8fafc; margin-bottom: 16px; display: flex; flex-direction: column; gap: 14px; }
+    /* 左側側邊欄：專案組清單 */
+    aside { width: 280px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+    .sidebar-header { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+    .sidebar-header h2 { margin: 0; font-size: 15px; }
+    .project-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 8px; }
+    .project-item { padding: 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; border: 1px solid transparent; }
+    .project-item:hover { background: #f1f5f9; }
+    .project-item.active { background: #eff6ff; border-color: #bfdbfe; }
+    .project-title { font-size: 14px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+    .project-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .btn-del-project { background: transparent; color: #94a3b8; padding: 4px 6px; font-size: 16px; border-radius: 4px; }
+    .btn-del-project:hover { background: #fee2e2; color: #ef4444; }
+
+    /* 右側主工作區 */
+    main { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; }
+    .content-container { max-width: 960px; width: 100%; margin: 0 auto; }
+
+    /* 日卡 (Day Cards) 網格 */
+    .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .dashboard-header h2 { margin: 0; font-size: 22px; }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    
+    .day-card { background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; transition: transform 0.15s, box-shadow 0.15s; position: relative; }
+    .day-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); }
+    
+    .card-day-tag { font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 6px; }
+    .card-title { font-size: 15px; font-weight: 600; color: #0f172a; line-height: 1.4; margin-bottom: 12px; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+    
+    /* 日卡三種狀態 */
+    .day-card.completed { border-left: 4px solid #10b981; }
+    .day-card.completed .card-day-tag { color: #059669; }
+    .day-card.current { border: 2px solid #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+    
+    /* 尚未學到的灰色狀態 */
+    .day-card.locked { background: #f8fafc; border-color: #e2e8f0; opacity: 0.65; filter: grayscale(80%); }
+    .day-card.locked:hover { transform: none; box-shadow: none; }
+    .day-card.locked .card-day-tag { color: #94a3b8; }
+    .day-card.locked .card-title { color: #64748b; }
+    .day-card.locked button { background: #94a3b8; }
+
+    /* 課堂學習與對話畫面 */
+    .study-wrapper { background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    #chat-box { height: 460px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; background: #f8fafc; margin: 16px 0; display: flex; flex-direction: column; gap: 14px; }
     .msg { padding: 12px 18px; border-radius: 8px; line-height: 1.6; max-width: 90%; font-size: 14px; }
     .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; }
     .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
     .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 13px; text-align: center; }
 
-    /* Markdown 元素在對話氣泡內部的標準樣式 */
-    .msg-bot h1, .msg-bot h2, .msg-bot h3 { margin-top: 12px; margin-bottom: 8px; color: #1e293b; }
-    .msg-bot p { margin: 6px 0; }
-    .msg-bot ul, .msg-bot ol { margin: 6px 0; padding-left: 20px; }
+    /* Markdown 元素美化 */
+    .msg-bot h1, .msg-bot h2, .msg-bot h3 { margin-top: 10px; margin-bottom: 6px; color: #0f172a; }
     .msg-bot table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
     .msg-bot th, .msg-bot td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
     .msg-bot th { background-color: #f1f5f9; }
     .msg-bot code { background-color: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
-    .msg-bot pre code { display: block; padding: 8px; overflow-x: auto; background-color: #1e293b; color: #f8fafc; }
 
     /* 測驗樣式 */
     .quiz-card { border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin-top: 14px; background: #ffffff; }
-    .option-label { display: block; margin: 8px 0; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background 0.15s; }
+    .option-label { display: block; margin: 8px 0; cursor: pointer; padding: 6px 8px; border-radius: 4px; }
     .option-label:hover { background: #f1f5f9; }
-    .explanation { margin-top: 12px; padding: 12px; background: #f8fafc; border-left: 4px solid #2563eb; font-size: 13px; }
+    .explanation { margin-top: 10px; padding: 10px; background: #f8fafc; border-left: 4px solid #2563eb; font-size: 13px; }
+
+    /* 彈跳視窗 Modal */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    .modal-box { background: white; padding: 24px; border-radius: 12px; width: 440px; max-width: 90%; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+    .modal-box h3 { margin-top: 0; margin-bottom: 12px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   </style>
 
-  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- Marked.js (用於渲染 Markdown) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
-<div class="container">
-  <h1>日語文法學習助手</h1>
+  <!-- 頂部列 -->
+  <header>
+    <h1>日語文法學習工作台</h1>
+    <div id="header-right" class="hidden">
+      <span class="status-badge" id="cloud-status">雲端已連線</span>
+    </div>
+  </header>
 
-  <!-- 步驟 1: 登入 Google 雲端 -->
-  <div id="section-auth" class="card">
-    <h3>連接 Google 雲端硬碟</h3>
-    <p style="font-size: 13px; color: #64748b;">
-      點擊下方按鈕登入，學習紀錄與金鑰將直接同步至個人的雲端硬碟空間。
+  <!-- 初始連線卡片 (全螢幕居中) -->
+  <div id="section-auth" style="max-width: 500px; margin: 60px auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+    <h2>連接 Google 雲端硬碟</h2>
+    <p style="font-size: 14px; color: #64748b; line-height: 1.5;">
+      點擊下方按鈕以登入 Google 帳號。所有建立的專案、日卡大綱與上課對話皆會安全保存在個人 Google 雲端硬碟中。
     </p>
 
-    <div style="margin-bottom: 12px;">
+    <div style="margin: 16px 0;">
       <label style="font-size: 12px; font-weight: normal; color: #64748b; cursor: pointer;">
         <input type="checkbox" id="chk-custom-client-id" style="width: auto; margin-right: 4px;"> 顯示自訂 Client ID
       </label>
-    </div>
-
-    <div id="box-custom-client-id" class="hidden">
-      <label for="input-client-id">Google OAuth Client ID</label>
-      <input type="text" id="input-client-id" value="865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com">
-    </div>
-
-    <button id="btn-login" type="button">登入 Google 帳號</button>
-  </div>
-
-  <!-- 步驟 2: 輸入 API Key（首次登入或更換時出現） -->
-  <div id="section-key-setup" class="card hidden">
-    <h3>設定 Gemini API Key</h3>
-    <p style="font-size: 13px; color: #64748b;">
-      初次使用請輸入 API Key。儲存後會同步至個人的 Google 雲端硬碟，日後無需再次輸入。
-    </p>
-    <label for="input-gemini-key">Gemini API Key</label>
-    <input type="password" id="input-gemini-key" placeholder="AIzaSy...">
-    <button id="btn-save-key" type="button">儲存至雲端並繼續</button>
-  </div>
-
-  <!-- 步驟 3: 設定學習規劃 -->
-  <div id="section-plan-setup" class="card hidden">
-    <h3>制定專屬學習日程表</h3>
-    <label for="input-goal">學習目標</label>
-    <input type="text" id="input-goal" placeholder="例如：JLPT N3 合格、日常生活會話、商務日語接續">
-
-    <label for="input-days">規劃天數</label>
-    <input type="number" id="input-days" value="14" min="1" max="90">
-
-    <button id="btn-create-plan" type="button">由 Gemini 規劃學習大綱</button>
-  </div>
-
-  <!-- 步驟 4: 課程總覽清單（專案主畫面 Dashboard） -->
-  <div id="section-dashboard" class="card hidden">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
-      <div>
-        <h2 id="text-dashboard-goal" style="margin: 0; font-size: 20px;">學習計畫大綱</h2>
-        <span id="text-dashboard-progress" style="font-size: 13px; color: #64748b; margin-top: 4px; display: block;">進度載入中...</span>
+      <div id="box-custom-client-id" class="hidden" style="margin-top: 8px;">
+        <input type="text" id="input-client-id" value="865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com" style="width: 100%; padding: 8px; font-size: 13px;">
       </div>
-      <button id="btn-reset-plan" type="button" class="btn-gray" style="font-size: 12px; padding: 6px 12px;">重新規劃目標</button>
     </div>
 
-    <div id="schedule-list" class="schedule-list">
-      <!-- 動態載入每天的標題與按鈕 -->
+    <button id="btn-login" style="width: 100%; padding: 12px; font-size: 15px;">登入 Google 帳號</button>
+  </div>
+
+  <!-- 主工作台：雙欄佈局 (預設隱藏) -->
+  <div id="app-layout" class="hidden">
+    <!-- 左側專案清單 -->
+    <aside>
+      <div class="sidebar-header">
+        <h2>專案組</h2>
+        <button id="btn-open-new-project-modal" style="padding: 4px 10px; font-size: 12px;">+ 新建計畫</button>
+      </div>
+      <ul id="project-list" class="project-list">
+        <!-- 動態渲染專案項目 -->
+      </ul>
+    </aside>
+
+    <!-- 右側主要操作區 -->
+    <main>
+      <div class="content-container">
+        <!-- 視圖 A: 專案日卡看板 -->
+        <section id="view-dashboard">
+          <div class="dashboard-header">
+            <div>
+              <h2 id="view-project-title">載入中...</h2>
+              <span id="view-project-progress" style="font-size: 13px; color: #64748b;">進度計算中...</span>
+            </div>
+          </div>
+          <div id="day-cards-grid" class="cards-grid">
+            <!-- 動態產生各天的日卡 -->
+          </div>
+        </section>
+
+        <!-- 視圖 B: 課堂學習與問答對話 -->
+        <section id="view-study" class="hidden">
+          <div class="study-wrapper">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <h2 id="study-day-title" style="margin: 0; font-size: 18px;">單元名稱</h2>
+              <button id="btn-back-cards" class="btn-gray">返回日卡清單</button>
+            </div>
+
+            <div id="chat-box"></div>
+
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="input-message" placeholder="針對上方內容有疑問可直接發問..." style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <button id="btn-send-message">發送提問</button>
+              <button id="btn-trigger-quiz" class="btn-green">今日小測驗</button>
+            </div>
+
+            <div id="quiz-container"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- 彈跳視窗：輸入 API Key -->
+  <div id="modal-key-setup" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3>設定 Gemini API Key</h3>
+      <p style="font-size: 13px; color: #64748b; line-height: 1.4;">
+        這是初次登入，請提供 Gemini API Key。金鑰將加密儲存於個人 Google Drive 中，往後自動讀取。
+      </p>
+      <input type="password" id="input-gemini-key" placeholder="AIzaSy..." style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 12px 0;">
+      <div class="modal-actions">
+        <button id="btn-save-key">儲存並繼續</button>
+      </div>
     </div>
   </div>
 
-  <!-- 步驟 5: 課堂學習與問答測驗介面 -->
-  <div id="section-study" class="card hidden">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h2 id="text-current-title" style="margin: 0; font-size: 20px;">載入中...</h2>
-      <button id="btn-back-dashboard" type="button" class="btn-gray" style="font-size: 13px; padding: 6px 14px;">返回日程清單</button>
+  <!-- 彈跳視窗：新建計畫專案 -->
+  <div id="modal-new-project" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h3>新增學習計畫專案</h3>
+      <label style="font-size: 13px; font-weight: 600; display: block; margin-top: 10px;">專案目標 / 名稱：</label>
+      <input type="text" id="input-new-goal" placeholder="例如：JLPT N3 核心文法、日常口語接續詞" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px;">
+
+      <label style="font-size: 13px; font-weight: 600; display: block; margin-top: 12px;">規劃天數：</label>
+      <input type="number" id="input-new-days" value="14" min="1" max="90" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px;">
+
+      <div class="modal-actions">
+        <button id="btn-cancel-new-project" class="btn-gray">取消</button>
+        <button id="btn-confirm-create-project">開始規劃大綱</button>
+      </div>
     </div>
-
-    <div id="chat-box"></div>
-
-    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-      <input type="text" id="input-message" placeholder="針對上方內容有疑問可直接發問 (支援 Markdown)..." style="margin-bottom: 0;">
-      <button id="btn-send-message" type="button">傳送</button>
-      <button id="btn-trigger-quiz" type="button" class="btn-green">今日小測驗</button>
-    </div>
-
-    <div id="quiz-container"></div>
   </div>
-</div>
 
 <script type="module">
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
   const MODEL_NAME = "gemini-3.1-flash-lite";
   const DEFAULT_CLIENT_ID = "865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com";
-  const DRIVE_FILE_NAME = "japanese_grammar_course_data.json";
+  const DRIVE_FILE_NAME = "japanese_grammar_multi_projects.json";
   const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
+  // 全域狀態
   const state = {
     geminiKey: "",
     accessToken: null,
     driveFileId: null,
-    userData: null,
+    appData: {
+      geminiKey: "",
+      activeProjectId: null,
+      projects: {} // { [id]: { id, goal, totalDays, plan: [], currentDayIndex: 0, history: {} } }
+    },
     activeDayIndex: null,
     chatInstance: null
   };
 
-  // DOM 元素快取
-  const authSection = document.getElementById("section-auth");
-  const keySetupSection = document.getElementById("section-key-setup");
-  const planSetupSection = document.getElementById("section-plan-setup");
-  const dashboardSection = document.getElementById("section-dashboard");
-  const studySection = document.getElementById("section-study");
-
-  const inputClientId = document.getElementById("input-client-id");
+  // DOM 快取
+  const sectionAuth = document.getElementById("section-auth");
+  const appLayout = document.getElementById("app-layout");
+  const headerRight = document.getElementById("header-right");
+  const btnLogin = document.getElementById("btn-login");
   const chkCustomClientId = document.getElementById("chk-custom-client-id");
   const boxCustomClientId = document.getElementById("box-custom-client-id");
+  const inputClientId = document.getElementById("input-client-id");
+
+  const modalKeySetup = document.getElementById("modal-key-setup");
   const inputGeminiKey = document.getElementById("input-gemini-key");
-  const btnLogin = document.getElementById("btn-login");
   const btnSaveKey = document.getElementById("btn-save-key");
-  const btnCreatePlan = document.getElementById("btn-create-plan");
-  const btnResetPlan = document.getElementById("btn-reset-plan");
+
+  const modalNewProject = document.getElementById("modal-new-project");
+  const btnOpenNewProject = document.getElementById("btn-open-new-project-modal");
+  const btnCancelNewProject = document.getElementById("btn-cancel-new-project");
+  const btnConfirmCreateProject = document.getElementById("btn-confirm-create-project");
+  const inputNewGoal = document.getElementById("input-new-goal");
+  const inputNewDays = document.getElementById("input-new-days");
+
+  const projectListElem = document.getElementById("project-list");
+  const viewDashboard = document.getElementById("view-dashboard");
+  const viewStudy = document.getElementById("view-study");
+  const viewProjectTitle = document.getElementById("view-project-title");
+  const viewProjectProgress = document.getElementById("view-project-progress");
+  const dayCardsGrid = document.getElementById("day-cards-grid");
+
+  const studyDayTitle = document.getElementById("study-day-title");
+  const chatBox = document.getElementById("chat-box");
+  const inputMessage = document.getElementById("input-message");
   const btnSendMessage = document.getElementById("btn-send-message");
   const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
-  const btnBackDashboard = document.getElementById("btn-back-dashboard");
-  const inputMessage = document.getElementById("input-message");
-  const chatBox = document.getElementById("chat-box");
-  const textCurrentTitle = document.getElementById("text-current-title");
+  const btnBackCards = document.getElementById("btn-back-cards");
   const quizContainer = document.getElementById("quiz-container");
-  const scheduleList = document.getElementById("schedule-list");
-  const textDashboardGoal = document.getElementById("text-dashboard-goal");
-  const textDashboardProgress = document.getElementById("text-dashboard-progress");
 
+  // 事件監聽綁定
   chkCustomClientId.addEventListener("change", (e) => {
-    if (e.target.checked) {
-      boxCustomClientId.classList.remove("hidden");
-    } else {
-      boxCustomClientId.classList.add("hidden");
-    }
+    boxCustomClientId.classList.toggle("hidden", !e.target.checked);
   });
-
   btnLogin.addEventListener("click", handleGoogleAuth);
   btnSaveKey.addEventListener("click", handleSaveApiKey);
-  btnCreatePlan.addEventListener("click", handleGeneratePlan);
-  btnResetPlan.addEventListener("click", handleResetPlan);
+  btnOpenNewProject.addEventListener("click", () => modalNewProject.classList.remove("hidden"));
+  btnCancelNewProject.addEventListener("click", () => modalNewProject.classList.add("hidden"));
+  btnConfirmCreateProject.addEventListener("click", handleCreateNewProject);
+  btnBackCards.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
-  btnBackDashboard.addEventListener("click", showDashboard);
 
   inputMessage.addEventListener("keydown", (e) => {
     if (e.key === "Enter") handleSendMessage();
   });
 
-  // 1. Google 授權登入
+  // 1. Google 授權與驗證
   function handleGoogleAuth() {
     const clientId = inputClientId.value.trim() || DEFAULT_CLIENT_ID;
 
     if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
-      alert("Google 驗證模組載入中，請稍候再試。");
+      alert("Google 驗證模組載入中，請稍候重試。");
       return;
     }
 
@@ -222,48 +301,47 @@
     const client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: SCOPES,
-      callback: async (response) => {
-        if (response.error) {
-          alert("授權失敗：" + response.error);
+      callback: async (resp) => {
+        if (resp.error) {
+          alert("授權失敗：" + resp.error);
           btnLogin.disabled = false;
           btnLogin.textContent = "登入 Google 帳號";
           return;
         }
-        state.accessToken = response.access_token;
-        await syncUserDataFromDrive();
+        state.accessToken = resp.access_token;
+        await syncDataFromDrive();
       }
     });
 
     client.requestAccessToken();
   }
 
-  // 2. 雲端同步與檔案檢查
-  async function syncUserDataFromDrive() {
+  // 2. Google Drive 多專案資料讀取與同步
+  async function syncDataFromDrive() {
     try {
-      const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`)}`;
-      const searchRes = await fetch(searchUrl, {
+      const q = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
+      const searchRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, {
         headers: { Authorization: `Bearer ${state.accessToken}` }
       });
-      const searchData = await searchRes.json();
+      const data = await searchRes.json();
 
-      if (searchData.files && searchData.files.length > 0) {
-        state.driveFileId = searchData.files[0].id;
+      if (data.files && data.files.length > 0) {
+        state.driveFileId = data.files[0].id;
         const fileContentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${state.driveFileId}?alt=media`, {
           headers: { Authorization: `Bearer ${state.accessToken}` }
         });
-        state.userData = await fileContentRes.json();
+        state.appData = await fileContentRes.json();
       } else {
-        state.userData = {
+        // 初次建立雲端檔案
+        state.appData = {
           geminiKey: "",
-          goal: "",
-          plan: null,
-          history: {} // 記錄各天學習狀態與教材
+          activeProjectId: null,
+          projects: {}
         };
-
         const metadata = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
         const form = new FormData();
         form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-        form.append("file", new Blob([JSON.stringify(state.userData)], { type: "application/json" }));
+        form.append("file", new Blob([JSON.stringify(state.appData)], { type: "application/json" }));
 
         const createRes = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
           method: "POST",
@@ -274,39 +352,22 @@
         state.driveFileId = created.id;
       }
 
-      authSection.classList.add("hidden");
+      sectionAuth.classList.add("hidden");
+      headerRight.classList.remove("hidden");
+      appLayout.classList.remove("hidden");
 
-      if (state.userData.geminiKey) {
-        state.geminiKey = state.userData.geminiKey;
-        renderFlow();
+      if (state.appData.geminiKey) {
+        state.geminiKey = state.appData.geminiKey;
+        initAppFlow();
       } else {
-        keySetupSection.classList.remove("hidden");
+        modalKeySetup.classList.remove("hidden");
       }
     } catch (err) {
       console.error(err);
-      alert("存取 Google Drive 失敗，請確認已在 Google Cloud 控制台將此網址加入「已授權的 JavaScript 來源」。");
+      alert("存取 Google 雲端失敗，請確認已在 GCP 將此網址加入授權來源。");
       btnLogin.disabled = false;
       btnLogin.textContent = "登入 Google 帳號";
     }
-  }
-
-  async function handleSaveApiKey() {
-    const key = inputGeminiKey.value.trim();
-    if (!key) {
-      alert("請輸入 Gemini API Key");
-      return;
-    }
-
-    btnSaveKey.disabled = true;
-    btnSaveKey.textContent = "儲存中...";
-
-    state.geminiKey = key;
-    state.userData.geminiKey = key;
-
-    await saveProgressToDrive();
-
-    keySetupSection.classList.add("hidden");
-    renderFlow();
   }
 
   async function saveProgressToDrive() {
@@ -317,143 +378,215 @@
         Authorization: `Bearer ${state.accessToken}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(state.userData)
+      body: JSON.stringify(state.appData)
     });
   }
 
-  // 3. 介面導覽與流程切換
-  function renderFlow() {
-    if (!state.userData.plan || state.userData.plan.length === 0) {
-      planSetupSection.classList.remove("hidden");
-      dashboardSection.classList.add("hidden");
-      studySection.classList.add("hidden");
+  async function handleSaveApiKey() {
+    const key = inputGeminiKey.value.trim();
+    if (!key) {
+      alert("請輸入 API Key");
+      return;
+    }
+    state.geminiKey = key;
+    state.appData.geminiKey = key;
+    await saveProgressToDrive();
+    modalKeySetup.classList.add("hidden");
+    initAppFlow();
+  }
+
+  function initAppFlow() {
+    const projectKeys = Object.keys(state.appData.projects || {});
+    if (projectKeys.length === 0) {
+      // 若無任何專案，引導開啟新建專案視窗
+      modalNewProject.classList.remove("hidden");
     } else {
-      showDashboard();
+      if (!state.appData.activeProjectId || !state.appData.projects[state.appData.activeProjectId]) {
+        state.appData.activeProjectId = projectKeys[0];
+      }
+      renderSidebar();
+      showCardsDashboard();
     }
   }
 
-  function showDashboard() {
-    planSetupSection.classList.add("hidden");
-    studySection.classList.add("hidden");
-    dashboardSection.classList.remove("hidden");
-    renderDashboard();
-  }
-
-  function handleResetPlan() {
-    if (confirm("重新規劃將會清空當前的大綱與課程進度，確定要繼續嗎？")) {
-      state.userData.plan = null;
-      state.userData.history = {};
-      saveProgressToDrive();
-      renderFlow();
-    }
-  }
-
-  // 4. 渲染專案主畫面（天數與課程大綱列表）
-  function renderDashboard() {
-    textDashboardGoal.textContent = `目標：${state.userData.goal || "日語文法學習計畫"}`;
-    scheduleList.innerHTML = "";
-
-    const totalDays = state.userData.plan.length;
-    const history = state.userData.history || {};
-    let completedCount = 0;
-
-    state.userData.plan.forEach((title, idx) => {
-      const isCompleted = history[idx]?.completed;
-      if (isCompleted) completedCount++;
-
-      const item = document.createElement("div");
-      item.className = "schedule-item";
-
-      item.innerHTML = `
-        <div class="schedule-info">
-          <div class="schedule-title">${title}</div>
-          <span class="schedule-status ${isCompleted ? 'status-completed' : 'status-pending'}">
-            ${isCompleted ? '已完成學習' : '尚未開始'}
-          </span>
-        </div>
-        <button type="button" class="${isCompleted ? 'btn-gray' : ''}" id="btn-start-day-${idx}">
-          ${isCompleted ? '複習課程' : '開始學習'}
-        </button>
-      `;
-
-      scheduleList.appendChild(item);
-
-      item.querySelector(`#btn-start-day-${idx}`).addEventListener("click", () => {
-        enterDayLesson(idx);
-      });
-    });
-
-    textDashboardProgress.textContent = `總進度：${completedCount} / ${totalDays} 天完成 (${Math.round((completedCount / totalDays) * 100)}%)`;
-  }
-
-  // 5. 規劃學習大綱 (Gemini API)
-  async function handleGeneratePlan() {
-    const goal = document.getElementById("input-goal").value.trim();
-    const days = document.getElementById("input-days").value;
+  // 3. 專案建立與刪除
+  async function handleCreateNewProject() {
+    const goal = inputNewGoal.value.trim();
+    const days = inputNewDays.value;
 
     if (!goal) {
-      alert("請輸入學習目標");
+      alert("請填寫專案目標");
       return;
     }
 
-    btnCreatePlan.disabled = true;
-    btnCreatePlan.textContent = "正在生成學習大綱...";
+    btnConfirmCreateProject.disabled = true;
+    btnConfirmCreateProject.textContent = "規劃大綱中...";
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
       const prompt = `你是一位專業的日語教學專家。請根據目標「${goal}」規劃 ${days} 天的每日學習大綱。
 要求：
-1. 每日主題具體包含特定文法、接續詞或語境表現。
+1. 每日主題具體包含特定文法、接續詞或情境表現。
 2. 輸出格式必須是純 JSON 字串陣列，格式如：["第 1 天: 主題名稱", "第 2 天: 主題名稱", ...]`;
 
       const res = await ai.models.generateContent({
         model: MODEL_NAME,
         contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
+        config: { responseMimeType: "application/json" }
       });
 
-      state.userData.goal = goal;
-      state.userData.plan = JSON.parse(res.text.trim());
-      state.userData.history = {};
+      const plan = JSON.parse(res.text.trim());
+      const newId = "proj_" + Date.now();
 
+      state.appData.projects[newId] = {
+        id: newId,
+        goal: goal,
+        totalDays: parseInt(days, 10),
+        plan: plan,
+        currentDayIndex: 0,
+        history: {}
+      };
+
+      state.appData.activeProjectId = newId;
       await saveProgressToDrive();
-      btnCreatePlan.disabled = false;
-      btnCreatePlan.textContent = "由 Gemini 規劃學習大綱";
-      showDashboard();
+
+      modalNewProject.classList.add("hidden");
+      inputNewGoal.value = "";
+      btnConfirmCreateProject.disabled = false;
+      btnConfirmCreateProject.textContent = "開始規劃大綱";
+
+      renderSidebar();
+      showCardsDashboard();
     } catch (e) {
       console.error(e);
-      alert("大綱生成失敗：" + e.message);
-      btnCreatePlan.disabled = false;
-      btnCreatePlan.textContent = "由 Gemini 規劃學習大綱";
+      alert("規劃生成失敗：" + e.message);
+      btnConfirmCreateProject.disabled = false;
+      btnConfirmCreateProject.textContent = "開始規劃大綱";
     }
   }
 
-  // 6. 點選進入特定天數的課程（動態生成教材與啟動對話）
-  async function enterDayLesson(dayIdx) {
+  async function handleDeleteProject(id, e) {
+    e.stopPropagation();
+    const proj = state.appData.projects[id];
+    if (confirm(`確定要刪除「${proj.goal}」專案嗎？相關學習記錄將全數移除。`)) {
+      delete state.appData.projects[id];
+      const remaining = Object.keys(state.appData.projects);
+      state.appData.activeProjectId = remaining.length > 0 ? remaining[0] : null;
+      await saveProgressToDrive();
+      initAppFlow();
+    }
+  }
+
+  // 4. 左側欄專案渲染
+  function renderSidebar() {
+    projectListElem.innerHTML = "";
+    const projects = state.appData.projects || {};
+
+    Object.values(projects).forEach((proj) => {
+      const li = document.createElement("li");
+      li.className = `project-item ${proj.id === state.appData.activeProjectId ? 'active' : ''}`;
+
+      const completedCount = Object.values(proj.history || {}).filter(h => h.completed).length;
+
+      li.innerHTML = `
+        <div>
+          <div class="project-title" title="${proj.goal}">${proj.goal}</div>
+          <div class="project-meta">${completedCount}/${proj.plan.length} 天 (${Math.round((completedCount/proj.plan.length)*100)}%)</div>
+        </div>
+        <button class="btn-del-project" title="刪除此專案">✕</button>
+      `;
+
+      li.addEventListener("click", () => {
+        state.appData.activeProjectId = proj.id;
+        saveProgressToDrive();
+        renderSidebar();
+        showCardsDashboard();
+      });
+
+      li.querySelector(".btn-del-project").addEventListener("click", (e) => handleDeleteProject(proj.id, e));
+      projectListElem.appendChild(li);
+    });
+  }
+
+  // 5. 右側：專案日卡看板（含灰色未解鎖狀態）
+  function showCardsDashboard() {
+    viewStudy.classList.add("hidden");
+    viewDashboard.classList.remove("hidden");
+
+    const currentProj = state.appData.projects[state.appData.activeProjectId];
+    if (!currentProj) return;
+
+    viewProjectTitle.textContent = currentProj.goal;
+    dayCardsGrid.innerHTML = "";
+
+    const history = currentProj.history || {};
+    const currentActiveIndex = currentProj.currentDayIndex || 0;
+    let completedCount = 0;
+
+    currentProj.plan.forEach((title, idx) => {
+      const isCompleted = history[idx]?.completed;
+      if (isCompleted) completedCount++;
+
+      const isCurrent = idx === currentActiveIndex;
+      const isLocked = idx > currentActiveIndex && !isCompleted;
+
+      const card = document.createElement("div");
+      // 套用狀態樣式：completed / current / locked(灰色)
+      card.className = `day-card ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}`;
+
+      card.innerHTML = `
+        <div>
+          <div class="card-day-tag">Day ${idx + 1} ${isCompleted ? '✓' : ''}</div>
+          <div class="card-title">${title}</div>
+        </div>
+        <div class="card-footer">
+          <span style="font-size: 12px; color: ${isLocked ? '#94a3b8' : '#64748b'};">
+            ${isCompleted ? '已熟練' : (isCurrent ? '當前單元' : (isLocked ? '尚未學到' : '進行中'))}
+          </span>
+          <button type="button" class="${isCompleted ? 'btn-gray' : ''}" id="btn-card-action-${idx}">
+            ${isCompleted ? '複習' : (isLocked ? '鎖定中' : '開始學習')}
+          </button>
+        </div>
+      `;
+
+      card.querySelector(`#btn-card-action-${idx}`).addEventListener("click", () => {
+        if (isLocked) {
+          if (confirm("這天為後續進度，建議循序漸進。確定要提前進入學習嗎？")) {
+            startDayStudy(idx);
+          }
+        } else {
+          startDayStudy(idx);
+        }
+      });
+
+      dayCardsGrid.appendChild(card);
+    });
+
+    viewProjectProgress.textContent = `完成度：${completedCount} / ${currentProj.plan.length} 天 (${Math.round((completedCount/currentProj.plan.length)*100)}%)`;
+  }
+
+  // 6. 進入課堂學習對話
+  async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
-    dashboardSection.classList.add("hidden");
-    studySection.classList.remove("hidden");
+    viewDashboard.classList.add("hidden");
+    viewStudy.classList.remove("hidden");
 
     chatBox.innerHTML = "";
     quizContainer.innerHTML = "";
-    const title = state.userData.plan[dayIdx];
-    textCurrentTitle.textContent = title;
 
-    if (!state.userData.history) {
-      state.userData.history = {};
-    }
+    const currentProj = state.appData.projects[state.appData.activeProjectId];
+    const title = currentProj.plan[dayIdx];
+    studyDayTitle.textContent = title;
+
+    if (!currentProj.history) currentProj.history = {};
 
     const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-
-    // 若雲端已有這天的教材快取，直接讀取避免重複生成消耗額度
-    let cachedContent = state.userData.history[dayIdx]?.lessonContent;
+    let cachedContent = currentProj.history[dayIdx]?.lessonContent;
 
     if (!cachedContent) {
-      appendMessage("system", `正在為您生成今日課程教材【${title}】...`);
+      appendMessage("system", `正在使用 Gemini 3.1 Flash-Lite 生成【${title}】的今日教材...`);
 
-      const lessonPrompt = `請為今日主題「${title}」撰寫完整的教學內容，請使用 Markdown 格式呈現（支援粗體、列表、表格與程式碼區塊）：
+      const prompt = `請為今日主題「${title}」撰寫完整的教學內容，請嚴格使用 Markdown 格式呈現（包含粗體、列表、表格與程式碼區塊）：
 1. ### 核心概念與接續規則
 詳細說明動詞/形容詞形態、接續助詞及核心含意。
 2. ### 結構解析與常犯錯誤
@@ -466,27 +599,25 @@
 結尾提示學生：若有不懂之處可直接在此提問；確認理解後請點選「今日小測驗」。`;
 
       try {
-        const lessonRes = await ai.models.generateContent({
+        const res = await ai.models.generateContent({
           model: MODEL_NAME,
-          contents: lessonPrompt
+          contents: prompt
         });
 
-        cachedContent = lessonRes.text;
-        state.userData.history[dayIdx] = {
+        cachedContent = res.text;
+        currentProj.history[dayIdx] = {
           lessonContent: cachedContent,
           completed: false
         };
         await saveProgressToDrive();
-      } catch (err) {
-        appendMessage("system", "教材載入失敗：" + err.message);
+      } catch (e) {
+        appendMessage("system", "教材載入失敗：" + e.message);
         return;
       }
     }
 
-    // 渲染 Markdown 教材
     appendMessage("bot", cachedContent);
 
-    // 建立延續問答 Session
     state.chatInstance = ai.chats.create({
       model: MODEL_NAME,
       config: {
@@ -495,7 +626,7 @@
     });
   }
 
-  // 7. 發送問題（支援 Markdown）
+  // 7. 發送問題
   async function handleSendMessage() {
     const text = inputMessage.value.trim();
     if (!text || !state.chatInstance) return;
@@ -511,26 +642,23 @@
     }
   }
 
-  // 渲染訊息並將 Markdown 轉換成 HTML
   function appendMessage(type, content) {
     const div = document.createElement("div");
     div.className = `msg msg-${type}`;
-
     if (type === "system") {
       div.textContent = content;
     } else {
-      // 使用 marked 解析 Markdown
       div.innerHTML = marked.parse(content);
     }
-
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // 8. 隨堂測驗（支援 Markdown 題目與解析）
+  // 8. 隨堂測驗與完成進度推進
   async function handleGenerateQuiz() {
-    const dayIdx = state.activeDayIndex;
-    const title = state.userData.plan[dayIdx];
+    const currentProj = state.appData.projects[state.appData.activeProjectId];
+    const title = currentProj.plan[state.activeDayIndex];
+
     btnTriggerQuiz.disabled = true;
     btnTriggerQuiz.textContent = "出題中...";
 
@@ -550,22 +678,25 @@
       const res = await ai.models.generateContent({
         model: MODEL_NAME,
         contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
+        config: { responseMimeType: "application/json" }
       });
 
       const list = JSON.parse(res.text.trim());
       renderQuizCards(list);
 
-      // 標註當天已完成學習並同步雲端
-      if (state.userData.history[dayIdx]) {
-        state.userData.history[dayIdx].completed = true;
+      // 標註當天已完成
+      if (currentProj.history[state.activeDayIndex]) {
+        currentProj.history[state.activeDayIndex].completed = true;
+        // 如果完成的是當前最新進度，將進度指針推進到下一天
+        if (state.activeDayIndex === currentProj.currentDayIndex && currentProj.currentDayIndex + 1 < currentProj.plan.length) {
+          currentProj.currentDayIndex += 1;
+        }
         await saveProgressToDrive();
+        renderSidebar();
       }
     } catch (e) {
       console.error(e);
-      alert("測驗生成失敗，請稍候重試：" + e.message);
+      alert("測驗生成失敗：" + e.message);
     } finally {
       btnTriggerQuiz.disabled = false;
       btnTriggerQuiz.textContent = "今日小測驗";
