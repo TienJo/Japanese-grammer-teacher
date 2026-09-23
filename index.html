@@ -2,120 +2,193 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>日語文法學習助手</title>
   <style>
-    body { font-family: sans-serif; margin: 20px; background: #f7f9fa; color: #333; }
-    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .hidden { display: none; }
-    button { padding: 8px 16px; border: none; background: #2563eb; color: white; border-radius: 4px; cursor: pointer; }
-    button:disabled { background: #94a3b8; }
-    input, select, textarea { width: 100%; padding: 8px; margin: 6px 0 12px; box-sizing: border-box; }
-    #chat-box { height: 350px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 12px; border-radius: 4px; background: #fafafa; margin-bottom: 12px; }
-    .msg { margin-bottom: 12px; line-height: 1.5; white-space: pre-wrap; }
-    .msg.bot { color: #1e293b; }
-    .msg.user { color: #2563eb; text-align: right; }
-    .quiz-card { border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; margin-top: 10px; background: #f8fafc; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; background: #f1f5f9; color: #1e293b; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .card { background: #ffffff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: 20px; }
+    .hidden { display: none !important; }
+    h1, h2, h3 { margin-top: 0; color: #0f172a; }
+    label { font-weight: 600; font-size: 14px; margin-bottom: 6px; display: block; }
+    input, select, textarea { width: 100%; padding: 10px 12px; margin-bottom: 16px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+    input:focus, textarea:focus { outline: none; border-color: #2563eb; ring: 2px #93c5fd; }
+    button { background: #2563eb; color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-green { background: #059669; }
+    .btn-green:hover { background: #047857; }
+    #chat-box { height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; background: #f8fafc; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .msg { padding: 12px 16px; border-radius: 8px; line-height: 1.6; max-width: 85%; white-space: pre-wrap; font-size: 14px; }
+    .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; }
+    .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
+    .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 13px; text-align: center; }
+    .quiz-card { border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin-top: 14px; background: #ffffff; }
+    .option-label { display: block; margin: 8px 0; cursor: pointer; padding: 6px 8px; border-radius: 4px; transition: background 0.15s; }
+    .option-label:hover { background: #f1f5f9; }
+    .explanation { margin-top: 12px; padding: 10px 12px; background: #f8fafc; border-left: 4px solid #2563eb; font-size: 13px; }
   </style>
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
-  <h1>日語文法學習助手</h1>
+<div class="container">
+  <h1>日語文法自主學習中心</h1>
 
-  <!-- 設定與授權區塊 -->
-  <div id="auth-section" class="card">
-    <h3>初始授權與金鑰設定</h3>
-    <label>Google Client ID:</label>
-    <input type="text" id="client-id" placeholder="xxxx.apps.googleusercontent.com">
-    <label>Gemini API Key:</label>
-    <input type="password" id="gemini-key" placeholder="AIzaSy...">
-    <button id="btn-auth">連接 Google Drive 並儲存設定</button>
+  <!-- 區塊 1: 金鑰與 Drive 授權 -->
+  <div id="section-auth" class="card">
+    <h3>初始憑證設定</h3>
+    <p style="font-size: 13px; color: #64748b;">
+      憑證與學習進度均儲存於你個人的 Google Drive 中，不經過任何第三方後端伺服器。
+    </p>
+    <label for="input-client-id">Google OAuth Client ID</label>
+    <input type="text" id="input-client-id" placeholder="例如：xxxx.apps.googleusercontent.com">
+
+    <label for="input-gemini-key">Gemini API Key</label>
+    <input type="password" id="input-gemini-key" placeholder="AIzaSy...">
+
+    <button id="btn-login" type="button">連接 Google Drive 並進入系統</button>
   </div>
 
-  <!-- 計畫設定區塊 -->
-  <div id="plan-setup-section" class="card hidden">
-    <h3>客製化學習計畫</h3>
-    <label>學習目標：</label>
-    <input type="text" id="plan-goal" placeholder="例如：JLPT N3 核心文法、日常對話基礎">
-    <label>規劃天數：</label>
-    <input type="number" id="plan-days" value="14" min="1" max="60">
-    <button id="btn-generate-plan">由 Gemini 規劃每日標題</button>
+  <!-- 區塊 2: 設定學習規劃 -->
+  <div id="section-plan" class="card hidden">
+    <h3>制定專屬學習日程表</h3>
+    <label for="input-goal">學習目標</label>
+    <input type="text" id="input-goal" placeholder="例如：JLPT N3 合格、日常生活旅遊會話、商務基礎敬語">
+
+    <label for="input-days">規劃天數</label>
+    <input type="number" id="input-days" value="14" min="1" max="90">
+
+    <button id="btn-create-plan" type="button">由 Gemini 自動規劃學習大綱</button>
   </div>
 
-  <!-- 學習主介面 -->
-  <div id="study-section" class="card hidden">
-    <h2 id="today-title">載入中...</h2>
-    <div id="chat-box"></div>
-    <div style="display: flex; gap: 8px;">
-      <input type="text" id="user-input" placeholder="有不懂的地方可以直接提問，或點擊開始測驗...">
-      <button id="btn-send">傳送</button>
-      <button id="btn-start-quiz" style="background: #059669;">開始測驗</button>
+  <!-- 區塊 3: 學習與測驗介面 -->
+  <div id="section-study" class="card hidden">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h2 id="text-current-title" style="margin: 0; font-size: 20px;">載入中...</h2>
+      <button id="btn-next-day" type="button" style="font-size: 12px; padding: 6px 12px; background: #475569;">前往下一天</button>
     </div>
+
+    <div id="chat-box"></div>
+
+    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+      <input type="text" id="input-message" placeholder="針對上方內容有疑問可直接發問..." style="margin-bottom: 0;">
+      <button id="btn-send-message" type="button">傳送</button>
+      <button id="btn-trigger-quiz" type="button" class="btn-green">今日小測驗</button>
+    </div>
+
     <div id="quiz-container"></div>
   </div>
+</div>
 
-  <script type="module">
-    import { GoogleGenAI } from "https://esm.run/@google/genai";
+<script type="module">
+  import { GoogleGenAI } from "https://esm.run/@google/genai";
 
-    let state = {
-      tokenClient: null,
-      accessToken: null,
-      geminiKey: "",
-      driveFileId: null,
-      studyData: null
-    };
+  // 全域狀態維護
+  const state = {
+    geminiKey: "",
+    accessToken: null,
+    driveFileId: null,
+    userData: null,
+    chatInstance: null
+  };
 
-    const SCOPES = "https://www.googleapis.com/auth/drive.file";
+  const DRIVE_FILE_NAME = "japanese_grammar_course_data.json";
+  const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-    // 1. 初始化 Google Drive 授權
-    document.getElementById("btn-auth").addEventListener("click", () => {
-      const clientId = document.getElementById("client-id").value.trim();
-      state.geminiKey = document.getElementById("gemini-key").value.trim();
+  // DOM 元素快取
+  const authSection = document.getElementById("section-auth");
+  const planSection = document.getElementById("section-plan");
+  const studySection = document.getElementById("section-study");
+  const inputClientId = document.getElementById("input-client-id");
+  const inputGeminiKey = document.getElementById("input-gemini-key");
+  const btnLogin = document.getElementById("btn-login");
+  const btnCreatePlan = document.getElementById("btn-create-plan");
+  const btnSendMessage = document.getElementById("btn-send-message");
+  const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
+  const btnNextDay = document.getElementById("btn-next-day");
+  const inputMessage = document.getElementById("input-message");
+  const chatBox = document.getElementById("chat-box");
+  const textCurrentTitle = document.getElementById("text-current-title");
+  const quizContainer = document.getElementById("quiz-container");
 
-      if (!clientId || !state.geminiKey) {
-        alert("請完整輸入 Client ID 與 Gemini API Key");
-        return;
-      }
+  // 1. 綁定事件監聽（完全替代 HTML onclick）
+  btnLogin.addEventListener("click", handleGoogleAuth);
+  btnCreatePlan.addEventListener("click", handleGeneratePlan);
+  btnSendMessage.addEventListener("click", handleSendMessage);
+  btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
+  btnNextDay.addEventListener("click", handleNextDay);
 
-      state.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: SCOPES,
-        callback: async (resp) => {
-          if (resp.error) return;
-          state.accessToken = resp.access_token;
-          await loadOrCreateUserData();
+  inputMessage.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleSendMessage();
+  });
+
+  // 2. Google Identity Services 驗證流程
+  function handleGoogleAuth() {
+    const clientId = inputClientId.value.trim();
+    const geminiKey = inputGeminiKey.value.trim();
+
+    if (!clientId || !geminiKey) {
+      alert("請確實填入 Client ID 與 Gemini API Key");
+      return;
+    }
+
+    if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
+      alert("Google 身分驗證元件載入中，請稍候 3 秒後再試。");
+      return;
+    }
+
+    state.geminiKey = geminiKey;
+    btnLogin.disabled = true;
+    btnLogin.textContent = "連線驗證中...";
+
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: SCOPES,
+      callback: async (response) => {
+        if (response.error) {
+          alert("授權失敗：" + response.error);
+          btnLogin.disabled = false;
+          btnLogin.textContent = "連接 Google Drive 並進入系統";
+          return;
         }
-      });
-      state.tokenClient.requestAccessToken();
+        state.accessToken = response.access_token;
+        await syncUserDataFromDrive();
+      }
     });
 
-    // 2. Google Drive 讀寫模組
-    async function loadOrCreateUserData() {
-      // 搜尋檔案是否存在
-      const q = encodeURIComponent("name = 'japanese_study_progress.json' and trashed = false");
-      const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}`, {
+    client.requestAccessToken();
+  }
+
+  // 3. Google Drive 檔案讀取與建立
+  async function syncUserDataFromDrive() {
+    try {
+      const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`)}`;
+      const searchRes = await fetch(searchUrl, {
         headers: { Authorization: `Bearer ${state.accessToken}` }
       });
-      const listData = await listRes.json();
+      const searchData = await searchRes.json();
 
-      if (listData.files && listData.files.length > 0) {
-        state.driveFileId = listData.files[0].id;
-        const fileRes = await fetch(`https://www.googleapis.com/drive/v3/files/${state.driveFileId}?alt=media`, {
+      if (searchData.files && searchData.files.length > 0) {
+        state.driveFileId = searchData.files[0].id;
+        const fileContentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${state.driveFileId}?alt=media`, {
           headers: { Authorization: `Bearer ${state.accessToken}` }
         });
-        state.studyData = await fileRes.json();
+        state.userData = await fileContentRes.json();
       } else {
-        // 建立新檔案
-        state.studyData = {
+        // 首次登入，建立初始雲端設定檔
+        state.userData = {
           geminiKey: state.geminiKey,
           plan: null,
-          currentDayIndex: 0,
-          records: {}
+          currentIndex: 0
         };
-        const metadata = { name: "japanese_study_progress.json", mimeType: "application/json" };
+
+        const metadata = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
         const form = new FormData();
         form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-        form.append("file", new Blob([JSON.stringify(state.studyData)], { type: "application/json" }));
+        form.append("file", new Blob([JSON.stringify(state.userData)], { type: "application/json" }));
 
         const createRes = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
           method: "POST",
@@ -126,111 +199,154 @@
         state.driveFileId = created.id;
       }
 
-      document.getElementById("auth-section").classList.add("hidden");
-      renderFlow();
+      authSection.classList.add("hidden");
+      renderCurrentState();
+    } catch (err) {
+      console.error(err);
+      alert("存取 Google Drive 失敗，請確認 Client ID 授權來源網址設定正確。");
+      btnLogin.disabled = false;
+      btnLogin.textContent = "連接 Google Drive 並進入系統";
+    }
+  }
+
+  async function saveProgressToDrive() {
+    if (!state.driveFileId) return;
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${state.driveFileId}?uploadType=media`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${state.accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(state.userData)
+    });
+  }
+
+  // 4. 介面流程判斷
+  function renderCurrentState() {
+    if (!state.userData.plan || state.userData.plan.length === 0) {
+      planSection.classList.remove("hidden");
+      studySection.classList.add("hidden");
+    } else {
+      planSection.classList.add("hidden");
+      studySection.classList.remove("hidden");
+      startDailyLesson();
+    }
+  }
+
+  // 5. 由 Gemini 生成日程規劃
+  async function handleGeneratePlan() {
+    const goal = document.getElementById("input-goal").value.trim();
+    const days = document.getElementById("input-days").value;
+
+    if (!goal) {
+      alert("請輸入學習目標");
+      return;
     }
 
-    async function syncToDrive() {
-      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${state.driveFileId}?uploadType=media`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${state.accessToken}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(state.studyData)
-      });
-    }
+    btnCreatePlan.disabled = true;
+    btnCreatePlan.textContent = "正在生成學習規劃...";
 
-    // 3. 流程渲染控制
-    function renderFlow() {
-      if (!state.studyData.plan) {
-        document.getElementById("plan-setup-section").classList.remove("hidden");
-      } else {
-        document.getElementById("plan-setup-section").classList.add("hidden");
-        document.getElementById("study-section").classList.remove("hidden");
-        loadDailyContent();
-      }
-    }
-
-    // 4. 生成日程表 (Gemini API)
-    document.getElementById("btn-generate-plan").addEventListener("click", async () => {
-      const goal = document.getElementById("plan-goal").value;
-      const days = document.getElementById("plan-days").value;
+    try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
+      const prompt = `你是一位專業的日語教學名師。請根據目標「${goal}」規劃 ${days} 天的每日學習主題。
+要求：
+1. 每日主題須具體包含特定文法、接續詞或情境表達。
+2. 輸出必須是乾淨的 JSON 字串陣列，格式範例：["第 1 天: 基礎助詞辨析", "第 2 天: 動詞て形變化"]
+3. 不要包含任何開頭開場白或結尾解釋。`;
 
-      const prompt = `請以日語教學專家身分，為目標為「${goal}」的學生設計 ${days} 天的學習大綱。
-請只回傳 JSON 字串陣列，格式為 ["第 1 天: 主題", "第 2 天: 主題", ...]，不可帶任何額外 Markdown 標籤或說明。`;
-
-      const response = await ai.models.generateContent({
+      const res = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt
       });
 
-      const cleanText = response.text.replace(/```json/g, "").replace(/```/g, "").trim();
-      state.studyData.plan = JSON.parse(cleanText);
-      state.studyData.currentDayIndex = 0;
-      await syncToDrive();
-      renderFlow();
+      const cleanJson = res.text.replace(/```json/g, "").replace(/```/g, "").trim();
+      state.userData.plan = JSON.parse(cleanJson);
+      state.userData.currentIndex = 0;
+
+      await saveProgressToDrive();
+      btnCreatePlan.disabled = false;
+      btnCreatePlan.textContent = "由 Gemini 自動規劃學習大綱";
+      renderCurrentState();
+    } catch (e) {
+      console.error(e);
+      alert("大綱生成出錯，請重試：" + e.message);
+      btnCreatePlan.disabled = false;
+      btnCreatePlan.textContent = "由 Gemini 自動規劃學習大綱";
+    }
+  }
+
+  // 6. 今日教學對話
+  async function startDailyLesson() {
+    chatBox.innerHTML = "";
+    quizContainer.innerHTML = "";
+    const idx = state.userData.currentIndex;
+    const title = state.userData.plan[idx] || "課程結束";
+    textCurrentTitle.textContent = title;
+
+    appendMessage("system", `載入今日單元：${title}`);
+
+    const ai = new GoogleGenAI({ apiKey: state.geminiKey });
+    state.chatInstance = ai.chats.create({
+      model: "gemini-2.5-flash",
+      config: {
+        systemInstruction: "你是耐心的日語專任家教。請清晰拆解接續規則、動詞形態變化與助詞差異，並給出易理解的生動例句。"
+      }
     });
 
-    // 5. 每日學習與對話
-    let chatSession = null;
+    const initPrompt = `請為今日進度「${title}」展開完整教學內容：
+1. 【核心句型與規則】：說明動詞/形容詞形態、接續助詞及核心含義。
+2. 【情境例句】：提供 3 個生活或檢定常見例句，附假名與中文翻譯。
+3. 【常犯錯誤】：列出 1~2 個台灣學習者最容易混淆的點。
+完成後提示學生：若有不懂之處可直接提問，確認明白後請點選「今日小測驗」。`;
 
-    async function loadDailyContent() {
-      const dayIdx = state.studyData.currentDayIndex;
-      const title = state.studyData.plan[dayIdx];
-      document.getElementById("today-title").innerText = title;
-
-      appendMsg("系統", `正在生成【${title}】的今日教材...`);
-
-      const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      chatSession = ai.chats.create({
-        model: "gemini-2.5-flash",
-        config: {
-          systemInstruction: `你是專業日語文法教師。請用親切清晰的方式解析文法、句型、動詞形態與助詞。`
-        }
-      });
-
-      const prompt = `請為今日進度「${title}」給予完整教學內容，包含核心概念、句型接續結構、動詞形態變化、常混淆助詞辨析與 3 個實用例句。說明完後提醒學生不懂隨時提問，或是準備好了可點擊測驗按鈕。`;
-      const res = await chatSession.sendMessage({ message: prompt });
-      appendMsg("老師", res.text);
+    try {
+      const res = await state.chatInstance.sendMessage({ message: initPrompt });
+      appendMessage("bot", res.text);
+    } catch (err) {
+      appendMessage("system", "教材載入失敗，請確認 API Key 額度或網路狀態。");
     }
+  }
 
-    function appendMsg(role, text) {
-      const box = document.getElementById("chat-box");
-      const div = document.createElement("div");
-      div.className = `msg ${role === "學生" ? "user" : "bot"}`;
-      div.innerText = `${role}: \n${text}`;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
+  async function handleSendMessage() {
+    const text = inputMessage.value.trim();
+    if (!text || !state.chatInstance) return;
+
+    appendMessage("user", text);
+    inputMessage.value = "";
+
+    try {
+      const res = await state.chatInstance.sendMessage({ message: text });
+      appendMessage("bot", res.text);
+    } catch (err) {
+      appendMessage("system", "回覆取得失敗：" + err.message);
     }
+  }
 
-    document.getElementById("btn-send").addEventListener("click", async () => {
-      const input = document.getElementById("user-input");
-      const val = input.value.trim();
-      if (!val || !chatSession) return;
-      appendMsg("學生", val);
-      input.value = "";
+  function appendMessage(type, content) {
+    const div = document.createElement("div");
+    div.className = `msg msg-${type}`;
+    div.textContent = content;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 
-      const res = await chatSession.sendMessage({ message: val });
-      appendMsg("老師", res.text);
-    });
+  // 7. 生成隨堂測驗
+  async function handleGenerateQuiz() {
+    const idx = state.userData.currentIndex;
+    const title = state.userData.plan[idx];
+    btnTriggerQuiz.disabled = true;
+    btnTriggerQuiz.textContent = "出題中...";
 
-    // 6. 生成與評估測驗
-    document.getElementById("btn-start-quiz").addEventListener("click", async () => {
-      const dayIdx = state.studyData.currentDayIndex;
-      const title = state.studyData.plan[dayIdx];
+    try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-
-      appendMsg("系統", "正在根據今日內容產生小考題目...");
-
-      const prompt = `針對主題「${title}」出 2 題測驗，請嚴格輸出符合以下 JSON 格式：
+      const prompt = `針對「${title}」出 2 題小測驗。
+嚴格返回 JSON 格式如下，不可包含額外文字：
 [
   {
     "question": "題目描述",
     "options": ["A. 選項1", "B. 選項2", "C. 選項3", "D. 選項4"],
     "answer": "A",
-    "explanation": "詳細解析"
+    "explanation": "選項解析與中文說明"
   }
 ]`;
 
@@ -239,34 +355,67 @@
         contents: prompt
       });
 
-      const cleanJson = res.text.replace(/```json/g, "").replace(/```/g, "").trim();
-      const quizList = JSON.parse(cleanJson);
-      renderQuiz(quizList);
-    });
-
-    function renderQuiz(list) {
-      const container = document.getElementById("quiz-container");
-      container.innerHTML = "<h3>今日隨堂測驗</h3>";
-
-      list.forEach((q, idx) => {
-        const div = document.createElement("div");
-        div.className = "quiz-card";
-        div.innerHTML = `
-          <p><strong>第 ${idx + 1} 題：${q.question}</strong></p>
-          ${q.options.map(opt => `<label><input type="radio" name="q_${idx}" value="${opt[0]}"> ${opt}</label><br>`).join("")}
-          <button style="margin-top:8px;" id="sub_${idx}">看解答</button>
-          <div id="exp_${idx}" class="hidden" style="margin-top:8px; color: #334155;">
-            <p><strong>正確解答：${q.answer}</strong></p>
-            <p>${q.explanation}</p>
-          </div>
-        `;
-        container.appendChild(div);
-
-        div.querySelector(`#sub_${idx}`).addEventListener("click", () => {
-          document.getElementById(`exp_${idx}`).classList.remove("hidden");
-        });
-      });
+      const clean = res.text.replace(/```json/g, "").replace(/```/g, "").trim();
+      const list = JSON.parse(clean);
+      renderQuizCards(list);
+    } catch (e) {
+      alert("測驗生成失敗，請稍候重試");
+    } finally {
+      btnTriggerQuiz.disabled = false;
+      btnTriggerQuiz.textContent = "今日小測驗";
     }
-  </script>
+  }
+
+  function renderQuizCards(list) {
+    quizContainer.innerHTML = "<h3 style='margin-top:20px;'>隨堂理解測驗</h3>";
+
+    list.forEach((item, index) => {
+      const card = document.createElement("div");
+      card.className = "quiz-card";
+
+      const qTitle = document.createElement("p");
+      qTitle.innerHTML = `<strong>第 ${index + 1} 題：${item.question}</strong>`;
+      card.appendChild(qTitle);
+
+      item.options.forEach(opt => {
+        const lbl = document.createElement("label");
+        lbl.className = "option-label";
+        lbl.innerHTML = `<input type="radio" name="opt_${index}" value="${opt[0]}"> ${opt}`;
+        card.appendChild(lbl);
+      });
+
+      const revealBtn = document.createElement("button");
+      revealBtn.type = "button";
+      revealBtn.textContent = "查看詳細解答";
+      revealBtn.style.marginTop = "8px";
+
+      const expBox = document.createElement("div");
+      expBox.className = "explanation hidden";
+      expBox.innerHTML = `<strong>正確答案：${item.answer}</strong><p style="margin: 4px 0 0;">${item.explanation}</p>`;
+
+      revealBtn.addEventListener("click", () => {
+        expBox.classList.remove("hidden");
+      });
+
+      card.appendChild(revealBtn);
+      card.appendChild(expBox);
+      quizContainer.appendChild(card);
+    });
+  }
+
+  // 8. 進入下一天
+  async function handleNextDay() {
+    if (state.userData.currentIndex + 1 >= state.userData.plan.length) {
+      alert("恭喜你！已經完成本階段的所有學習日程！");
+      return;
+    }
+    if (confirm("確定要儲存進度並前往下一天的學習主題嗎？")) {
+      state.userData.currentIndex += 1;
+      await saveProgressToDrive();
+      startDailyLesson();
+    }
+  }
+</script>
+
 </body>
 </html>
