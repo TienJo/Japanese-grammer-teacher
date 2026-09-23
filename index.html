@@ -36,22 +36,39 @@
 <div class="container">
   <h1>日語文法學習助手</h1>
 
-  <!-- 區塊 1: 金鑰與 Drive 授權 -->
+  <!-- 步驟 1: 登入 Google 雲端 -->
   <div id="section-auth" class="card">
-    <h3>初始憑證設定</h3>
+    <h3>連接 Google 雲端硬碟</h3>
     <p style="font-size: 13px; color: #64748b;">
-      憑證與學習進度均儲存於你個人的 Google Drive 中，不經過任何第三方後端伺服器。
+      點擊下方按鈕登入，學習紀錄與金鑰將直接同步至你個人的雲端空間。
     </p>
-    <label for="input-client-id">Google OAuth Client ID</label>
-    <input type="text" id="input-client-id" placeholder="例如：xxxx.apps.googleusercontent.com">
 
-    <label for="input-gemini-key">Gemini API Key</label>
-    <input type="password" id="input-gemini-key" placeholder="AIzaSy...">
+    <div style="margin-bottom: 12px;">
+      <label style="font-size: 12px; font-weight: normal; color: #64748b; cursor: pointer;">
+        <input type="checkbox" id="chk-custom-client-id" style="width: auto; margin-right: 4px;"> 顯示自訂 Client ID
+      </label>
+    </div>
 
-    <button id="btn-login" type="button">連接 Google Drive 並進入系統</button>
+    <div id="box-custom-client-id" class="hidden">
+      <label for="input-client-id">Google OAuth Client ID</label>
+      <input type="text" id="input-client-id" value="865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com">
+    </div>
+
+    <button id="btn-login" type="button">登入 Google 帳號</button>
   </div>
 
-  <!-- 區塊 2: 設定學習規劃 -->
+  <!-- 步驟 2: 輸入 API Key（首次登入或更換時出現） -->
+  <div id="section-key-setup" class="card hidden">
+    <h3>設定 Gemini API Key</h3>
+    <p style="font-size: 13px; color: #64748b;">
+      這是你第一次登入或雲端尚未儲存 API Key。儲存後將直接存入 Google 雲端硬碟，日後無需再次輸入。
+    </p>
+    <label for="input-gemini-key">Gemini API Key</label>
+    <input type="password" id="input-gemini-key" placeholder="AIzaSy...">
+    <button id="btn-save-key" type="button">儲存至雲端並繼續</button>
+  </div>
+
+  <!-- 步驟 3: 設定學習規劃 -->
   <div id="section-plan" class="card hidden">
     <h3>制定專屬學習日程表</h3>
     <label for="input-goal">學習目標</label>
@@ -63,7 +80,7 @@
     <button id="btn-create-plan" type="button">由 Gemini 3.7 Flash 規劃學習大綱</button>
   </div>
 
-  <!-- 區塊 3: 學習與測驗介面 -->
+  <!-- 步驟 4: 學習與測驗介面 -->
   <div id="section-study" class="card hidden">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
       <h2 id="text-current-title" style="margin: 0; font-size: 20px;">載入中...</h2>
@@ -85,6 +102,10 @@
 <script type="module">
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
+  const DEFAULT_CLIENT_ID = "865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com";
+  const DRIVE_FILE_NAME = "japanese_grammar_course_data.json";
+  const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
   const state = {
     geminiKey: "",
     accessToken: null,
@@ -93,16 +114,17 @@
     chatInstance: null
   };
 
-  const DRIVE_FILE_NAME = "japanese_grammar_course_data.json";
-  const SCOPES = "https://www.googleapis.com/auth/drive.file";
-
   // DOM 元素快取
   const authSection = document.getElementById("section-auth");
+  const keySetupSection = document.getElementById("section-key-setup");
   const planSection = document.getElementById("section-plan");
   const studySection = document.getElementById("section-study");
   const inputClientId = document.getElementById("input-client-id");
+  const chkCustomClientId = document.getElementById("chk-custom-client-id");
+  const boxCustomClientId = document.getElementById("box-custom-client-id");
   const inputGeminiKey = document.getElementById("input-gemini-key");
   const btnLogin = document.getElementById("btn-login");
+  const btnSaveKey = document.getElementById("btn-save-key");
   const btnCreatePlan = document.getElementById("btn-create-plan");
   const btnSendMessage = document.getElementById("btn-send-message");
   const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
@@ -112,8 +134,18 @@
   const textCurrentTitle = document.getElementById("text-current-title");
   const quizContainer = document.getElementById("quiz-container");
 
+  // 切換自訂 Client ID 顯示
+  chkCustomClientId.addEventListener("change", (e) => {
+    if (e.target.checked) {
+      boxCustomClientId.classList.remove("hidden");
+    } else {
+      boxCustomClientId.classList.add("hidden");
+    }
+  });
+
   // 事件綁定
   btnLogin.addEventListener("click", handleGoogleAuth);
+  btnSaveKey.addEventListener("click", handleSaveApiKey);
   btnCreatePlan.addEventListener("click", handleGeneratePlan);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
@@ -123,22 +155,15 @@
     if (e.key === "Enter") handleSendMessage();
   });
 
-  // 1. Google 授權與身分驗證
+  // 1. Google 授權登入
   function handleGoogleAuth() {
-    const clientId = inputClientId.value.trim();
-    const geminiKey = inputGeminiKey.value.trim();
-
-    if (!clientId || !geminiKey) {
-      alert("請確實填入 Client ID 與 Gemini API Key");
-      return;
-    }
+    const clientId = inputClientId.value.trim() || DEFAULT_CLIENT_ID;
 
     if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
-      alert("Google 驗證模組載入中，請稍候再試。");
+      alert("Google 驗證模組載入中，請稍候 3 秒後再試。");
       return;
     }
 
-    state.geminiKey = geminiKey;
     btnLogin.disabled = true;
     btnLogin.textContent = "驗證中...";
 
@@ -149,7 +174,7 @@
         if (response.error) {
           alert("授權失敗：" + response.error);
           btnLogin.disabled = false;
-          btnLogin.textContent = "連接 Google Drive 並進入系統";
+          btnLogin.textContent = "登入 Google 帳號";
           return;
         }
         state.accessToken = response.access_token;
@@ -160,7 +185,7 @@
     client.requestAccessToken();
   }
 
-  // 2. Google Drive 讀寫
+  // 2. 雲端同步與檔案檢查
   async function syncUserDataFromDrive() {
     try {
       const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`)}`;
@@ -176,8 +201,9 @@
         });
         state.userData = await fileContentRes.json();
       } else {
+        // 初次使用，建立空白結構
         state.userData = {
-          geminiKey: state.geminiKey,
+          geminiKey: "",
           plan: null,
           currentIndex: 0
         };
@@ -197,13 +223,40 @@
       }
 
       authSection.classList.add("hidden");
-      renderCurrentState();
+
+      // 檢查是否已存在 API Key
+      if (state.userData.geminiKey) {
+        state.geminiKey = state.userData.geminiKey;
+        renderFlow();
+      } else {
+        keySetupSection.classList.remove("hidden");
+      }
     } catch (err) {
       console.error(err);
-      alert("存取 Google Drive 失敗，請確認 Client ID 與授權來源設定。");
+      alert("存取 Google Drive 失敗，請確認已在 Google Cloud 控制台將此網址加入「已授權的 JavaScript 來源」。");
       btnLogin.disabled = false;
-      btnLogin.textContent = "連接 Google Drive 並進入系統";
+      btnLogin.textContent = "登入 Google 帳號";
     }
+  }
+
+  // 3. 儲存金鑰至 Google 雲端
+  async function handleSaveApiKey() {
+    const key = inputGeminiKey.value.trim();
+    if (!key) {
+      alert("請輸入 Gemini API Key");
+      return;
+    }
+
+    btnSaveKey.disabled = true;
+    btnSaveKey.textContent = "儲存中...";
+
+    state.geminiKey = key;
+    state.userData.geminiKey = key;
+
+    await saveProgressToDrive();
+
+    keySetupSection.classList.add("hidden");
+    renderFlow();
   }
 
   async function saveProgressToDrive() {
@@ -218,7 +271,8 @@
     });
   }
 
-  function renderCurrentState() {
+  // 4. 判斷進入規劃頁或課程頁
+  function renderFlow() {
     if (!state.userData.plan || state.userData.plan.length === 0) {
       planSection.classList.remove("hidden");
       studySection.classList.add("hidden");
@@ -229,7 +283,7 @@
     }
   }
 
-  // 3. 規劃學習大綱 (使用 gemini-3.7-flash)
+  // 5. 規劃學習大綱 (gemini-3.7-flash)
   async function handleGeneratePlan() {
     const goal = document.getElementById("input-goal").value.trim();
     const days = document.getElementById("input-days").value;
@@ -263,7 +317,7 @@
       await saveProgressToDrive();
       btnCreatePlan.disabled = false;
       btnCreatePlan.textContent = "由 Gemini 3.7 Flash 規劃學習大綱";
-      renderCurrentState();
+      renderFlow();
     } catch (e) {
       console.error(e);
       alert("規劃生成失敗：" + e.message);
@@ -272,7 +326,7 @@
     }
   }
 
-  // 4. 教材內容生成 (gemini-3.7-flash) & 建立即時問答 (gemini-3.1-flash-lite)
+  // 6. 今日教材生成 (gemini-3.7-flash) 與問答初始化 (gemini-3.1-flash-lite)
   async function startDailyLesson() {
     chatBox.innerHTML = "";
     quizContainer.innerHTML = "";
@@ -285,7 +339,6 @@
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
 
-      // 使用 3.7 Flash 產出深度教材內容
       const lessonPrompt = `請為今日主題「${title}」撰寫完整的教學內容：
 1. 【核心概念與接續規則】：詳細說明動詞/形容詞形態、接續助詞及核心含意。
 2. 【結構解析與常犯錯誤】：剖析句型結構，指出中文母語者最容易犯錯的助詞誤用。
@@ -300,7 +353,7 @@
 
       appendMessage("bot", lessonRes.text);
 
-      // 後續的互動問答交由速度快、成本低的 3.1 Flash-Lite 負責
+      // 問答委派給 gemini-3.1-flash-lite
       state.chatInstance = ai.chats.create({
         model: "gemini-3.1-flash-lite",
         config: {
@@ -313,7 +366,7 @@
     }
   }
 
-  // 5. 學生提問回答 (使用 gemini-3.1-flash-lite)
+  // 7. 提問發送 (gemini-3.1-flash-lite)
   async function handleSendMessage() {
     const text = inputMessage.value.trim();
     if (!text || !state.chatInstance) return;
@@ -337,7 +390,7 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // 6. 生成測驗 (使用 gemini-3.7-flash)
+  // 8. 隨堂測驗 (gemini-3.7-flash)
   async function handleGenerateQuiz() {
     const idx = state.userData.currentIndex;
     const title = state.userData.plan[idx];
@@ -390,7 +443,7 @@
       item.options.forEach(opt => {
         const lbl = document.createElement("label");
         lbl.className = "option-label";
-        lbl.innerHTML = `<input type="radio" name="q_${index}" value="${opt[0]}"> ${opt}`;
+        lbl.innerHTML = `<input type="radio" name="opt_${index}" value="${opt[0]}"> ${opt}`;
         card.appendChild(lbl);
       });
 
@@ -413,7 +466,7 @@
     });
   }
 
-  // 7. 推進天數
+  // 9. 前往下一天
   async function handleNextDay() {
     if (state.userData.currentIndex + 1 >= state.userData.plan.length) {
       alert("恭喜你！已經完成本計畫的所有學習主題！");
