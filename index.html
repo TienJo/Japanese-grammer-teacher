@@ -68,12 +68,12 @@
 
     .study-layout { display: flex; height: 100%; width: 100%; gap: 20px; padding: 20px; overflow: hidden; }
     
-    /* 左欄：3.8 Flash 深度教材閱讀專區 */
+    /* 左欄：2.5 Flash 深度教材閱讀專區 */
     .lecture-panel { flex: 6; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .lecture-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
     .lecture-content { flex: 1; overflow-y: auto; padding: 24px; line-height: 1.75; font-size: 15px; color: #334155; }
     
-    /* 右欄：3.5 Flash-Lite 即時助教問答與隨堂測驗 */
+    /* 右欄：2.5 Flash-Lite 即時助教問答與隨堂測驗 */
     .interactive-panel { flex: 4; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .interactive-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 15px; }
     .chat-scroll-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
@@ -156,7 +156,7 @@
         <div class="empty-state-card">
           <h2>建立第一個日語學習計畫</h2>
           <p style="font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 20px;">
-            目前尚未建立任何專案。請設定目標與規劃天數，Gemini 3.8 Flash 將為你客製化完整的文法學習日程表。
+            目前尚未建立任何專案。請設定目標與規劃天數，Gemini 2.5 Flash 將為你客製化完整的文法學習日程表。
           </p>
 
           <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">學習目標 / 主題：</label>
@@ -182,7 +182,7 @@
 
       <!-- 視圖 B: 雙欄寬敞學習介面 -->
       <section id="view-study" class="study-layout hidden">
-        <!-- 左欄：3.8 Flash 深度教材閱讀專區 -->
+        <!-- 左欄：2.5 Flash 深度教材閱讀專區 -->
         <div class="lecture-panel">
           <div class="lecture-header">
             <div>
@@ -196,7 +196,7 @@
           </div>
         </div>
 
-        <!-- 右欄：3.5 Flash-Lite 即時助教問答與隨堂測驗 -->
+        <!-- 右欄：2.5 Flash-Lite 即時助教問答與隨堂測驗 -->
         <div class="interactive-panel">
           <div class="interactive-header">AI 助教對話與隨堂測驗</div>
           <div id="chat-box" class="chat-scroll-area"></div>
@@ -246,8 +246,8 @@
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
   // 模型架構分工
-  const LECTURE_MODEL = "gemini-3.8-flash";       // 深度長文教材與大綱生成
-  const CHAT_MODEL = "gemini-3.5-flash-lite";     // 即時互動對話與測驗
+  const LECTURE_MODEL = "gemini-2.5-flash";       // 深度長文教材與大綱生成
+  const CHAT_MODEL = "gemini-2.5-flash-lite";     // 即時互動對話與測驗
   
   const DEFAULT_CLIENT_ID = "865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com";
   const DRIVE_FILE_NAME = "japanese_grammar_multi_projects.json";
@@ -461,7 +461,7 @@
 
     const originalText = triggerBtn.textContent;
     triggerBtn.disabled = true;
-    triggerBtn.textContent = "規劃大綱中 (3.8 Flash)...";
+    triggerBtn.textContent = "規劃大綱中 (2.5 Flash)...";
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
@@ -632,7 +632,7 @@
 
     if (!cachedContent) {
       lectureContentBox.innerHTML = `<div style="text-align:center; padding: 40px; color: #64748b;">
-        <p style="font-weight:600; font-size:16px;">正在透過 Gemini 3.8 Flash 生成深度專業講義...</p>
+        <p style="font-weight:600; font-size:16px;">正在透過 Gemini 2.5 Flash 生成深度專業講義...</p>
         <p style="font-size:13px;">包含接續形態對照表、句型構造剖析與中日思維差異拆解，請稍候片刻。</p>
       </div>`;
 
@@ -685,7 +685,7 @@
     lectureContentBox.innerHTML = marked.parse(cachedContent);
     appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側隨時提供即時提問解答。`);
 
-    // 啟動 Gemini 3.5 Flash-Lite 作為即時互動助教
+    // 啟動 Gemini 2.5 Flash-Lite 作為即時互動助教
     state.chatInstance = ai.chats.create({
       model: CHAT_MODEL,
       config: {
