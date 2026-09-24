@@ -108,6 +108,9 @@
   </style>
 
   <!-- Google Identity Services & Marked -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -611,6 +614,25 @@
     viewProjectProgress.textContent = `完成度：${completedCount} / ${currentProj.plan.length} 天 (${Math.round((completedCount/currentProj.plan.length)*100)}%)`;
   }
 
+  function renderMarkdownContent(targetElem, text) {
+    if (!text) {
+      targetElem.innerHTML = "";
+      return;
+    }
+    targetElem.innerHTML = marked.parse(text);
+    if (window.renderMathInElement) {
+      window.renderMathInElement(targetElem, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "\\[", right: "\\]", display: true }
+        ],
+        throwOnError: false
+      });
+    }
+  }
+
   async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
     viewDashboard.classList.add("hidden");
@@ -639,7 +661,10 @@
       const lecturePrompt = `你是一位精通比較語言學與日語教學的文法專家。
 請針對今日文法核心主題「${title}」撰寫一份完整、嚴謹且深度充足的專業教學講義。
 
-請一律使用清楚的 Markdown 格式，並且嚴格涵蓋以下五大核心模組：
+格式嚴格要求：
+1. 請一律使用乾淨清晰的標準 Markdown 格式。
+2. 句型結構與骨架公式請優先使用 Markdown 行內標籤、粗體或清晰符號表示（例如：\`[主語 (あなたが)]\` + \`[對象 (私に)]\` + \`[名詞 を]\` + \`ください\`），嚴禁出現雜亂未編譯的複雜 LaTeX 代碼（如 \`\\text{}\`、\`\\quad\` 等未處理字串）。若必須使用公式符號，請確保符合標準 LaTeX 數學界定符號 \`$$...$$\`。
+3. 嚴格涵蓋以下五大核心模組：
 
 # 【${title}】深度文法解析講義
 
@@ -682,7 +707,7 @@
       }
     }
 
-    lectureContentBox.innerHTML = marked.parse(cachedContent);
+    renderMarkdownContent(lectureContentBox, cachedContent);
     appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側隨時提供即時提問解答。`);
 
     // 啟動 Gemini 2.5 Flash-Lite 作為即時互動助教
@@ -694,7 +719,7 @@
 
 ${cachedContent}
 
-請根據上方教材內容與學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。`
+請根據上方教材內容與學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。若需呈現句型骨架，請使用方括號或行內代碼表示，避免混雜繁瑣的 LaTeX 控制字元。`
       }
     });
   }
@@ -720,7 +745,7 @@ ${cachedContent}
     if (type === "system") {
       div.textContent = content;
     } else {
-      div.innerHTML = marked.parse(content);
+      renderMarkdownContent(div, content);
     }
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
@@ -800,7 +825,8 @@ ${cachedContent}
 
       const expBox = document.createElement("div");
       expBox.className = "explanation hidden";
-      expBox.innerHTML = `<strong>正確答案：${item.answer}</strong><div style="margin-top: 4px;">${marked.parse(item.explanation)}</div>`;
+      expBox.innerHTML = `<strong>正確答案：${item.answer}</strong><div class="exp-text" style="margin-top: 4px;"></div>`;
+      renderMarkdownContent(expBox.querySelector(".exp-text"), item.explanation);
 
       revealBtn.addEventListener("click", () => {
         expBox.classList.remove("hidden");
