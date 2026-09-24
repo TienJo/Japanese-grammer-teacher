@@ -430,6 +430,14 @@
     return MODEL_DISPLAY_NAMES[modelId] || modelId;
   }
 
+  function handleGoogleAuth() {
+    const clientId = inputClientId.value.trim() || DEFAULT_CLIENT_ID;
+
+    if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
+      alert("Google 驗證模組載入中，請稍候重試。");
+      return;
+    }
+
     btnLogin.disabled = true;
     btnLogin.textContent = "驗證中...";
 
