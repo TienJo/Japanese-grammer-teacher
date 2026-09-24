@@ -121,10 +121,10 @@
     .chat-scroll-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
     .chat-input-bar { padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #ffffff; display: flex; flex-direction: column; gap: 8px; }
 
-    .msg { padding: 10px 14px; border-radius: 8px; line-height: 1.5; max-width: 90%; font-size: 13.5px; word-break: break-word; }
-    .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; }
+    .msg { padding: 10px 14px; border-radius: 8px; line-height: 1.5; max-width: 92%; font-size: 13.5px; word-break: break-word; }
+    .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; box-shadow: 0 1px 2px rgba(0,0,0,0.03); }
     .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
-    .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 12px; padding: 6px 12px; border-radius: 9999px; }
+    .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 12px; padding: 6px 12px; border-radius: 9999px; text-align: center; }
 
     .lecture-content h1, .lecture-content h2, .lecture-content h3 { color: #0f172a; margin-top: 24px; margin-bottom: 10px; }
     .lecture-content h2 { border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; }
@@ -134,10 +134,9 @@
     .lecture-content blockquote { margin: 12px 0; padding: 8px 16px; border-left: 4px solid #2563eb; background: #f8fafc; color: #475569; }
     .lecture-content code { background: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
 
-    .quiz-card { border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-top: 10px; background: #ffffff; }
-    .option-label { display: block; margin: 6px 0; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 13px; }
-    .option-label:hover { background: #f1f5f9; }
-    .explanation { margin-top: 8px; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #2563eb; font-size: 12.5px; }
+    .msg ol, .msg ul { margin: 6px 0; padding-left: 20px; }
+    .msg li { margin-bottom: 6px; }
+    .msg p { margin: 4px 0; }
 
     .btn-icon { background: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 15px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
     .btn-icon:hover { background: #f1f5f9; color: #0f172a; }
@@ -169,6 +168,13 @@
       0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
       40% { transform: scale(1); opacity: 1; }
     }
+
+    #input-message {
+      font-family: inherit;
+      resize: vertical;
+      min-height: 38px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -184,7 +190,6 @@
     </div>
   </header>
 
-  <!-- 抽屜關閉遮罩 -->
   <div id="sidebar-overlay"></div>
 
   <!-- 初始連線卡片 -->
@@ -271,10 +276,10 @@
           </div>
         </div>
 
-        <!-- 右欄：即時助教問答與隨堂測驗 -->
+        <!-- 右欄：即時助教問答與隨堂測驗（全部整合於對話流中） -->
         <div class="interactive-panel">
           <div class="interactive-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <span>AI 助教對話與隨堂測驗</span>
+            <span>AI 助教對話與隨堂測驗 (Gemini 3 Flash 批改)</span>
             <div style="display: flex; align-items: center; gap: 6px; font-weight: normal; font-size: 12px; color: #64748b;">
               <span>回答程度:</span>
               <input type="range" id="slider-detail-level" min="1" max="3" step="1" value="2" style="width: 70px; cursor: pointer;">
@@ -283,13 +288,12 @@
           </div>
           <div id="chat-box" class="chat-scroll-area"></div>
           <div class="chat-input-bar">
-            <div style="display: flex; gap: 6px;">
-              <input type="text" id="input-message" placeholder="針對左側教材有任何疑問，請在此發問..." style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
-              <button id="btn-send-message">提問</button>
+            <div style="display: flex; gap: 6px; align-items: flex-end;">
+              <textarea id="input-message" rows="1" placeholder="發問或作答... (Enter 發送，Shift+Enter 換行)" style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"></textarea>
+              <button id="btn-send-message" style="height: 38px;">發送</button>
             </div>
-            <button id="btn-trigger-quiz" class="btn-green" style="width: 100%;">進行今日隨堂測驗</button>
+            <button id="btn-trigger-quiz" class="btn-green" style="width: 100%;">進行今日 10+1 題隨堂測驗 (Gemini 3 Flash)</button>
           </div>
-          <div id="quiz-container" style="max-height: 240px; overflow-y: auto; padding: 0 16px 16px;"></div>
         </div>
       </section>
     </main>
@@ -317,7 +321,7 @@
         <button id="btn-close-settings-x" style="background: transparent; color: #94a3b8; font-size: 18px; padding: 2px 6px; border-radius: 4px;">✕</button>
       </div>
       <p style="font-size: 13px; color: #64748b; line-height: 1.4; margin-bottom: 16px;">
-        可自由選擇規劃教材與問答使用的 Gemini 模型，設定會自動同步保存至個人雲端。
+        可自由選擇規劃教材使用的 Gemini 模型（隨堂測驗出題與詳解已預設啟用 Gemini 3 Flash）。
       </p>
 
       <div style="margin-bottom: 14px;">
@@ -332,11 +336,11 @@
 
       <div style="margin-bottom: 16px;">
         <label for="select-chat-model" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">
-          助教問答與隨堂測驗模型：
+          一般日常助教問答模型：
         </label>
         <select id="select-chat-model" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
-          <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (推薦・快速響應)</option>
-          <option value="gemini-3-flash-preview">Gemini 3 Flash (高智能)</option>
+          <option value="gemini-3-flash-preview">Gemini 3 Flash (推薦・智慧解析)</option>
+          <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (快速響應)</option>
         </select>
       </div>
 
@@ -380,8 +384,9 @@
   <script type="module">
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
-  const DEFAULT_LECTURE_MODEL = "gemini-3-flash-preview";
-  const DEFAULT_CHAT_MODEL = "gemini-3.1-flash-lite";
+  const FLASH_MODEL = "gemini-3-flash-preview";
+  const DEFAULT_LECTURE_MODEL = FLASH_MODEL;
+  const DEFAULT_CHAT_MODEL = FLASH_MODEL;
 
   const MODEL_DISPLAY_NAMES = {
     "gemini-3-flash-preview": "Gemini 3 Flash",
@@ -402,7 +407,7 @@
       settings: {
         lectureModel: DEFAULT_LECTURE_MODEL,
         chatModel: DEFAULT_CHAT_MODEL,
-        detailLevel: 2 // 1: 簡答, 2: 適中, 3: 詳盡
+        detailLevel: 2
       },
       projects: {}
     },
@@ -457,7 +462,6 @@
   const btnSendMessage = document.getElementById("btn-send-message");
   const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
   const btnBackCardsLeft = document.getElementById("btn-back-cards-left");
-  const quizContainer = document.getElementById("quiz-container");
   const sliderDetailLevel = document.getElementById("slider-detail-level");
   const badgeDetailLevel = document.getElementById("badge-detail-level");
 
@@ -514,7 +518,7 @@
   
   btnBackCardsLeft.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
-  btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
+  btnTriggerQuiz.addEventListener("click", handleStartInChatQuiz);
 
   btnToggleSidebar.addEventListener("click", () => {
     document.body.classList.toggle("drawer-open");
@@ -570,7 +574,10 @@
   });
 
   inputMessage.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") handleSendMessage();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   });
 
   function getActiveLectureModel() {
@@ -964,7 +971,8 @@
     viewStudy.classList.remove("hidden");
 
     chatBox.innerHTML = "";
-    quizContainer.innerHTML = "";
+    inputMessage.value = "";
+    inputMessage.rows = 1;
 
     const currentProj = state.appData.projects[state.appData.activeProjectId];
     const projectGoal = currentProj.goal || "日語文法學習";
@@ -987,7 +995,6 @@
     let cachedContent = currentProj.history[dayIdx]?.lessonContent;
 
     const currentLectureModel = getActiveLectureModel();
-    const currentChatModel = getActiveChatModel();
 
     if (!cachedContent) {
       lectureContentBox.innerHTML = `<div style="text-align:center; padding: 40px; color: #64748b;">
@@ -1048,18 +1055,16 @@
 
     renderMarkdownContent(lectureContentBox, cachedContent);
 
-    // 處理歷史對話還原與 Gemini Context 載入
+    // 處理歷史對話還原與 Gemini Context 載入 (問答與批改固定以 FLASH_MODEL 驅動)
     const savedChat = currentProj.history[dayIdx].chatHistory || [];
     const geminiChatHistory = [];
 
     if (savedChat.length === 0) {
-      const defaultWelcome = `已載入【${title}】完整講義（針對「${projectGoal}」客製規劃）。左側為深度教材，右側由 ${getModelLabel(currentChatModel)} 隨時提供解答。`;
+      const defaultWelcome = `已載入【${title}】完整講義（針對「${projectGoal}」客製規劃）。左側為深度教材，右側隨時發問，或點擊下方按鈕啟動 **10+1 題隨堂測驗**（由 ${getModelLabel(FLASH_MODEL)} 出題與批改）！`;
       appendChatMessage("system", defaultWelcome, true);
     } else {
-      // 重新繪製先前保存的對話泡泡
       savedChat.forEach(msg => {
         appendChatMessage(msg.type, msg.content, false);
-        // 將使用者與模型對答組裝入 Gemini SDK 的歷史格式
         if (msg.type === "user") {
           geminiChatHistory.push({ role: "user", parts: [{ text: msg.content }] });
         } else if (msg.type === "bot") {
@@ -1069,17 +1074,23 @@
     }
 
     state.chatInstance = ai.chats.create({
-      model: currentChatModel,
+      model: FLASH_MODEL,
       history: geminiChatHistory,
       config: {
-        systemInstruction: `你是親切的日語課堂助教。
-學生目前的學習專案為：【${projectGoal}】。
-學生正在閱讀單元「${title}」的詳細教材，教材內容如下：
+        systemInstruction: `你是親切、專業、嚴謹且精通日語文法的資深名師助教。
+學生目前的學習專案主題為：【${projectGoal}】。
+學生正在研讀今日單元「${title}」，教材內容如下：
 
 ${cachedContent}
 
-請根據專案目標【${projectGoal}】與上方教材內容，針對學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。若需呈現句型骨架，請使用方括號或行內代碼表示，避免混雜繁瑣的 LaTeX 控制字元。
-【重要要求】：請直接針對學生的問題給予解答，絕對不要進行自我介紹，也不要說「我是你的日語助教」、「我來為你解答」等冗餘的開場白。回答情境應符合【${projectGoal}】的使用風格。`
+【核心職責與規範】：
+1. 日常問答：根據專案大方向【${projectGoal}】與教材，用繁體中文給予清晰深刻的解答。若需拆解句型，使用 Markdown 標註，避免 LaTeX 控制碼。
+2. 測驗批改與詳解：
+   - 當學生提交隨堂測驗答案時，你必須化身為最細心的日語名師進行全面批改。
+   - 逐題對照答案，明確標示【正解】或【訂正】。
+   - 針對學生答錯或模稜兩可的題目，務必結合講義裡的「接續規則」、「語境語感」、「助詞深層作用」給予令人信服的深度剖析，並指出常見誤區陷阱。
+   - 給予總得分評語，並特別針對第 11 題 Bonus 困難題提供進階語感剖析。
+3. 風格要求：直接針對批改或問題切入重點，禁止「我是你的日語助教」等冗長陳腔濫調，口氣親切專業且充滿啟發。`
       }
     });
   }
@@ -1090,6 +1101,7 @@ ${cachedContent}
 
     appendChatMessage("user", text, true);
     inputMessage.value = "";
+    inputMessage.rows = 1;
 
     const typingId = "typing-" + Date.now();
     const typingDiv = document.createElement("div");
@@ -1102,11 +1114,11 @@ ${cachedContent}
     const detailLevel = state.appData.settings?.detailLevel || 2;
     let detailConstraint = "";
     if (detailLevel === 1) {
-      detailConstraint = "\n\n【回答風格限制：簡答模式】請用最精簡扼要、直截了當的方式回答（1~2 句話直擊核心，不需任何冗長鋪陳與額外展開）。";
+      detailConstraint = "\n\n【回答風格限制：簡答模式】請直截了當回答（若為改題則直接給予正誤與核心解答，不需過多冗長鋪陳）。";
     } else if (detailLevel === 3) {
       detailConstraint = "\n\n【回答風格限制：詳盡模式】請給予極為深入且完整的解答，剖析語義語感細微差異、助詞作用、文法接續與常見誤區，並附上多個具體生活例句。";
     } else {
-      detailConstraint = "\n\n【回答風格限制：適中模式】請以條理清晰、重點突出的方式回答，並附帶關鍵說明與必要的 1 個例句。";
+      detailConstraint = "\n\n【回答風格限制：適中模式】請以條理清晰、重點突出的方式回答，並附帶關鍵說明。";
     }
 
     try {
@@ -1130,7 +1142,6 @@ ${cachedContent}
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
 
-    // 持久化儲存到雲端資料結構中
     if (shouldPersist && state.activeDayIndex !== null) {
       const currentProj = state.appData.projects[state.appData.activeProjectId];
       if (currentProj && currentProj.history && currentProj.history[state.activeDayIndex]) {
@@ -1143,38 +1154,63 @@ ${cachedContent}
     }
   }
 
-  async function handleGenerateQuiz() {
+  async function handleStartInChatQuiz() {
+    if (!state.chatInstance) return;
+
     const currentProj = state.appData.projects[state.appData.activeProjectId];
     const projectGoal = currentProj.goal || "日語文法學習";
     const title = currentProj.plan[state.activeDayIndex];
-    const currentChatModel = getActiveChatModel();
 
     btnTriggerQuiz.disabled = true;
-    btnTriggerQuiz.textContent = "生成測驗中...";
+    btnTriggerQuiz.textContent = "Gemini 3 Flash 正在精心設計 10+1 題測驗...";
+
+    const typingId = "typing-" + Date.now();
+    const typingDiv = document.createElement("div");
+    typingDiv.className = "msg msg-bot";
+    typingDiv.id = typingId;
+    typingDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+    chatBox.appendChild(typingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const quizCommandPrompt = `【系統指令：請直接在此為學生出題，共嚴格要求 10 題 + 1 題 Bonus 困難題】
+請針對今日單元「${title}」（學習主題：${projectGoal}）出題。
+
+題型配置要求（共 11 題）：
+- 題 1 ~ 题 3：【文法單選題】（4 選 1，考驗核心動詞變化與句型接續）。
+- 題 4 ~ 题 6：【助詞與形態填空題】（例句中以 ( ) 挖空，測驗助詞搭配或動詞適當形態轉換）。
+- 題 7 ~ 题 8：【語序排列重組題】（提供 4 個語塊，請學生排出正確順序，例如：①～④）。
+- 題 9 ~ 题 10：【實戰情境病句改錯 / 短句中翻日】（緊扣【${projectGoal}】的生活/職場情境）。
+- 題 11：【🔥 Bonus 困難挑戰題】（設計深度語義辨析、極易混淆的相似語感陷阱，或進階敬語/使役被動轉換，標註為 Bonus 題）。
+
+排版要求：
+1. 嚴格按照 1. 到 10. 以及 Bonus. 依序列出題目，題目敘述清晰。
+2. 題目結尾請親切提示：「我已為您在下方輸入框預填好題號範本，請直接在對應編號後填寫答案發送，我將為您批改並提供完整詳解！」。
+3. 嚴禁在這次回覆中公佈答案或解析！待學生送出答案後再進行全面批改。`;
 
     try {
-      const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      const prompt = `請針對專案目標【${projectGoal}】中的日語文法單元「${title}」出 2 題小測驗。
-題目必須契合【${projectGoal}】的情境與語用風格（例如口語朋友對話、商務書信、檢定精準接續等），考驗接續變化與助詞用法。
-嚴格回傳符合以下結構的 JSON 陣列：
-[
-  {
-    "question": "題目描述",
-    "options": ["A. 選項1", "B. 選項2", "C. 選項3", "D. 選項4"],
-    "answer": "A",
-    "explanation": "選項解析與句型說明"
-  }
-]`;
+      const res = await state.chatInstance.sendMessage({ message: quizCommandPrompt });
+      document.getElementById(typingId)?.remove();
+      appendChatMessage("bot", res.text, true);
 
-      const res = await ai.models.generateContent({
-        model: currentChatModel,
-        contents: prompt,
-        config: { responseMimeType: "application/json" }
-      });
+      // 自動在輸入框填上題號模版
+      inputMessage.rows = 11;
+      inputMessage.value = 
+`1. 
+2. 
+3. 
+4. 
+5. 
+6. 
+7. 
+8. 
+9. 
+10. 
+Bonus. `;
+      inputMessage.focus();
+      // 將游標移至第 1 題之後
+      inputMessage.setSelectionRange(3, 3);
 
-      const list = JSON.parse(res.text.trim());
-      renderQuizCards(list);
-
+      // 自動記錄該天單元進度
       if (currentProj.history[state.activeDayIndex]) {
         currentProj.history[state.activeDayIndex].completed = true;
         if (state.activeDayIndex === currentProj.currentDayIndex && currentProj.currentDayIndex + 1 < currentProj.plan.length) {
@@ -1183,53 +1219,13 @@ ${cachedContent}
         await saveProgressToDrive();
         renderSidebar();
       }
-    } catch (e) {
-      console.error(e);
-      showToast("測驗生成失敗：" + e.message, "error");
+    } catch (err) {
+      document.getElementById(typingId)?.remove();
+      appendChatMessage("system", "測驗出題失敗：" + err.message, true);
     } finally {
       btnTriggerQuiz.disabled = false;
-      btnTriggerQuiz.textContent = "進行今日隨堂測驗";
+      btnTriggerQuiz.textContent = "進行今日 10+1 題隨堂測驗 (Gemini 3 Flash)";
     }
-  }
-
-  function renderQuizCards(list) {
-    quizContainer.innerHTML = "<h4 style='margin: 12px 0 6px;'>今日隨堂測驗</h4>";
-
-    list.forEach((item, index) => {
-      const card = document.createElement("div");
-      card.className = "quiz-card";
-
-      const qTitle = document.createElement("p");
-      qTitle.innerHTML = `<strong>第 ${index + 1} 題：</strong> ${marked.parseInline(item.question)}`;
-      card.appendChild(qTitle);
-
-      item.options.forEach(opt => {
-        const lbl = document.createElement("label");
-        lbl.className = "option-label";
-        lbl.innerHTML = `<input type="radio" name="quiz_opt_${index}" value="${opt[0]}"> ${marked.parseInline(opt)}`;
-        card.appendChild(lbl);
-      });
-
-      const revealBtn = document.createElement("button");
-      revealBtn.type = "button";
-      revealBtn.textContent = "查看解答";
-      revealBtn.style.marginTop = "6px";
-      revealBtn.style.fontSize = "12px";
-      revealBtn.style.padding = "4px 8px";
-
-      const expBox = document.createElement("div");
-      expBox.className = "explanation hidden";
-      expBox.innerHTML = `<strong>正確答案：${item.answer}</strong><div class="exp-text" style="margin-top: 4px;"></div>`;
-      renderMarkdownContent(expBox.querySelector(".exp-text"), item.explanation);
-
-      revealBtn.addEventListener("click", () => {
-        expBox.classList.remove("hidden");
-      });
-
-      card.appendChild(revealBtn);
-      card.appendChild(expBox);
-      quizContainer.appendChild(card);
-    });
   }
   </script>
 </body>
