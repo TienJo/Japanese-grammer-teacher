@@ -100,6 +100,10 @@
     .option-label:hover { background: #f1f5f9; }
     .explanation { margin-top: 8px; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #2563eb; font-size: 12.5px; }
 
+    /* 設定齒輪按鈕 */
+    .btn-icon { background: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 15px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-icon:hover { background: #f1f5f9; color: #0f172a; }
+
     /* 彈跳視窗 Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
     .modal-box { background: white; padding: 24px; border-radius: 12px; width: 440px; max-width: 90%; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
@@ -130,23 +134,8 @@
   <header>
     <h1>日語文法學習工作台</h1>
     <div id="header-right" class="hidden" style="display: flex; align-items: center; gap: 14px;">
-      <div style="display: flex; align-items: center; gap: 10px; font-size: 12.5px;">
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <label for="select-lecture-model" style="color: #64748b; font-weight: 500;">教材模型:</label>
-          <select id="select-lecture-model" style="padding: 4px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #0f172a; cursor: pointer;">
-            <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
-            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
-          </select>
-        </div>
-        <div style="display: flex; align-items: center; gap: 5px;">
-          <label for="select-chat-model" style="color: #64748b; font-weight: 500;">助教模型:</label>
-          <select id="select-chat-model" style="padding: 4px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #0f172a; cursor: pointer;">
-            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
-            <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
-          </select>
-        </div>
-      </div>
       <span class="status-badge" id="cloud-status">Google Drive 已連線</span>
+      <button id="btn-open-settings-modal" class="btn-icon" title="模型偏好設定">⚙️ 設定</button>
     </div>
   </header>
 
@@ -256,6 +245,43 @@
     </div>
   </div>
 
+  <!-- 設定彈跳視窗：模型切換 -->
+  <div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0;">系統與模型設定</h3>
+        <button id="btn-close-settings-x" style="background: transparent; color: #94a3b8; font-size: 18px; padding: 2px 6px; border-radius: 4px;">✕</button>
+      </div>
+      <p style="font-size: 13px; color: #64748b; line-height: 1.4; margin-bottom: 16px;">
+        可自由選擇規劃教材與問答使用的 Gemini 模型，設定會自動同步保存至個人雲端。
+      </p>
+
+      <div style="margin-bottom: 14px;">
+        <label for="select-lecture-model" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">
+          主要教材與大綱生成模型：
+        </label>
+        <select id="select-lecture-model" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+          <option value="gemini-3-flash-preview">Gemini 3 Flash (推薦・深度解析)</option>
+          <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (極速輕量)</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="select-chat-model" style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">
+          助教問答與隨堂測驗模型：
+        </label>
+        <select id="select-chat-model" style="width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+          <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite (推薦・快速響應)</option>
+          <option value="gemini-3-flash-preview">Gemini 3 Flash (高智能)</option>
+        </select>
+      </div>
+
+      <div class="modal-actions">
+        <button id="btn-save-settings">儲存並套用</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-new-project" class="modal-overlay hidden">
     <div class="modal-box">
       <h3>新增學習計畫專案</h3>
@@ -308,6 +334,10 @@
   const sectionAuth = document.getElementById("section-auth");
   const appLayout = document.getElementById("app-layout");
   const headerRight = document.getElementById("header-right");
+  const btnOpenSettings = document.getElementById("btn-open-settings-modal");
+  const modalSettings = document.getElementById("modal-settings");
+  const btnCloseSettingsX = document.getElementById("btn-close-settings-x");
+  const btnSaveSettings = document.getElementById("btn-save-settings");
   const selectLectureModel = document.getElementById("select-lecture-model");
   const selectChatModel = document.getElementById("select-chat-model");
   const btnLogin = document.getElementById("btn-login");
@@ -361,16 +391,27 @@
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
 
-  selectLectureModel.addEventListener("change", async (e) => {
-    if (!state.appData.settings) state.appData.settings = {};
-    state.appData.settings.lectureModel = e.target.value;
-    await saveProgressToDrive();
+  // 設定齒輪彈窗事件
+  btnOpenSettings.addEventListener("click", () => {
+    selectLectureModel.value = getActiveLectureModel();
+    selectChatModel.value = getActiveChatModel();
+    modalSettings.classList.remove("hidden");
   });
 
-  selectChatModel.addEventListener("change", async (e) => {
+  btnCloseSettingsX.addEventListener("click", () => {
+    modalSettings.classList.add("hidden");
+  });
+
+  btnSaveSettings.addEventListener("click", async () => {
     if (!state.appData.settings) state.appData.settings = {};
-    state.appData.settings.chatModel = e.target.value;
+    state.appData.settings.lectureModel = selectLectureModel.value;
+    state.appData.settings.chatModel = selectChatModel.value;
+    btnSaveSettings.disabled = true;
+    btnSaveSettings.textContent = "儲存中...";
     await saveProgressToDrive();
+    btnSaveSettings.disabled = false;
+    btnSaveSettings.textContent = "儲存並套用";
+    modalSettings.classList.add("hidden");
   });
 
   inputMessage.addEventListener("keydown", (e) => {
@@ -458,7 +499,7 @@
       headerRight.classList.remove("hidden");
       appLayout.classList.remove("hidden");
 
-      // 同步模型選單當前設定
+      // 同步模型設定選單數值
       selectLectureModel.value = getActiveLectureModel();
       selectChatModel.value = getActiveChatModel();
 
