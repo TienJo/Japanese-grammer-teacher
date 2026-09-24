@@ -105,6 +105,17 @@
     .modal-box { background: white; padding: 24px; border-radius: 12px; width: 440px; max-width: 90%; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     .modal-box h3 { margin-top: 0; margin-bottom: 12px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+    /* 輸入中動畫 */
+    .typing-indicator { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px; height: 24px; }
+    .typing-indicator span { width: 6px; height: 6px; background-color: #94a3b8; border-radius: 50%; animation: typing 1.4s infinite both; }
+    .typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing {
+      0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+      40% { transform: scale(1); opacity: 1; }
+    }
   </style>
 
   <!-- Google Identity Services & Marked -->
@@ -719,7 +730,8 @@
 
 ${cachedContent}
 
-請根據上方教材內容與學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。若需呈現句型骨架，請使用方括號或行內代碼表示，避免混雜繁瑣的 LaTeX 控制字元。`
+請根據上方教材內容與學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。若需呈現句型骨架，請使用方括號或行內代碼表示，避免混雜繁瑣的 LaTeX 控制字元。
+【重要要求】：請直接針對學生的問題給予解答，絕對不要進行自我介紹，也不要說「我是你的日語助教」、「我來為你解答」等冗餘的開場白。`
       }
     });
   }
@@ -731,10 +743,21 @@ ${cachedContent}
     appendChatMessage("user", text);
     inputMessage.value = "";
 
+    // 顯示正在輸入動畫
+    const typingId = "typing-" + Date.now();
+    const typingDiv = document.createElement("div");
+    typingDiv.className = "msg msg-bot";
+    typingDiv.id = typingId;
+    typingDiv.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
+    chatBox.appendChild(typingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
     try {
       const res = await state.chatInstance.sendMessage({ message: text });
+      document.getElementById(typingId)?.remove();
       appendChatMessage("bot", res.text);
     } catch (err) {
+      document.getElementById(typingId)?.remove();
       appendChatMessage("system", "回覆取得失敗：" + err.message);
     }
   }
