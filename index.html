@@ -129,7 +129,23 @@
 
   <header>
     <h1>日語文法學習工作台</h1>
-    <div id="header-right" class="hidden">
+    <div id="header-right" class="hidden" style="display: flex; align-items: center; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 12.5px;">
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <label for="select-lecture-model" style="color: #64748b; font-weight: 500;">教材模型:</label>
+          <select id="select-lecture-model" style="padding: 4px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #0f172a; cursor: pointer;">
+            <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: center; gap: 5px;">
+          <label for="select-chat-model" style="color: #64748b; font-weight: 500;">助教模型:</label>
+          <select id="select-chat-model" style="padding: 4px 8px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff; color: #0f172a; cursor: pointer;">
+            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
+            <option value="gemini-3-flash-preview">Gemini 3 Flash</option>
+          </select>
+        </div>
+      </div>
       <span class="status-badge" id="cloud-status">Google Drive 已連線</span>
     </div>
   </header>
@@ -259,9 +275,14 @@
   <script type="module">
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
-  // 模型架構分工
-  const LECTURE_MODEL = "gemini-3-flash-preview"; // 深度長文教材與大綱生成 (Gemini 3 Flash)
-  const CHAT_MODEL = "gemini-3.1-flash-lite";     // 即時互動對話與測驗 (Gemini 3.1 Flash-Lite)
+  // 預設模型定義
+  const DEFAULT_LECTURE_MODEL = "gemini-3-flash-preview"; // 預設：Gemini 3 Flash
+  const DEFAULT_CHAT_MODEL = "gemini-3.1-flash-lite";     // 預設：Gemini 3.1 Flash-Lite
+
+  const MODEL_DISPLAY_NAMES = {
+    "gemini-3-flash-preview": "Gemini 3 Flash",
+    "gemini-3.1-flash-lite": "Gemini 3.1 Flash-Lite"
+  };
   
   const DEFAULT_CLIENT_ID = "865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com";
   const DRIVE_FILE_NAME = "japanese_grammar_multi_projects.json";
@@ -274,6 +295,10 @@
     appData: {
       geminiKey: "",
       activeProjectId: null,
+      settings: {
+        lectureModel: DEFAULT_LECTURE_MODEL,
+        chatModel: DEFAULT_CHAT_MODEL
+      },
       projects: {}
     },
     activeDayIndex: null,
@@ -283,6 +308,8 @@
   const sectionAuth = document.getElementById("section-auth");
   const appLayout = document.getElementById("app-layout");
   const headerRight = document.getElementById("header-right");
+  const selectLectureModel = document.getElementById("select-lecture-model");
+  const selectChatModel = document.getElementById("select-chat-model");
   const btnLogin = document.getElementById("btn-login");
   const chkCustomClientId = document.getElementById("chk-custom-client-id");
   const boxCustomClientId = document.getElementById("box-custom-client-id");
@@ -334,17 +361,33 @@
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
 
+  selectLectureModel.addEventListener("change", async (e) => {
+    if (!state.appData.settings) state.appData.settings = {};
+    state.appData.settings.lectureModel = e.target.value;
+    await saveProgressToDrive();
+  });
+
+  selectChatModel.addEventListener("change", async (e) => {
+    if (!state.appData.settings) state.appData.settings = {};
+    state.appData.settings.chatModel = e.target.value;
+    await saveProgressToDrive();
+  });
+
   inputMessage.addEventListener("keydown", (e) => {
     if (e.key === "Enter") handleSendMessage();
   });
 
-  function handleGoogleAuth() {
-    const clientId = inputClientId.value.trim() || DEFAULT_CLIENT_ID;
+  function getActiveLectureModel() {
+    return state.appData.settings?.lectureModel || DEFAULT_LECTURE_MODEL;
+  }
 
-    if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
-      alert("Google 驗證模組載入中，請稍候重試。");
-      return;
-    }
+  function getActiveChatModel() {
+    return state.appData.settings?.chatModel || DEFAULT_CHAT_MODEL;
+  }
+
+  function getModelLabel(modelId) {
+    return MODEL_DISPLAY_NAMES[modelId] || modelId;
+  }
 
     btnLogin.disabled = true;
     btnLogin.textContent = "驗證中...";
@@ -381,10 +424,20 @@
           headers: { Authorization: `Bearer ${state.accessToken}` }
         });
         state.appData = await fileContentRes.json();
+        if (!state.appData.settings) {
+          state.appData.settings = {
+            lectureModel: DEFAULT_LECTURE_MODEL,
+            chatModel: DEFAULT_CHAT_MODEL
+          };
+        }
       } else {
         state.appData = {
           geminiKey: "",
           activeProjectId: null,
+          settings: {
+            lectureModel: DEFAULT_LECTURE_MODEL,
+            chatModel: DEFAULT_CHAT_MODEL
+          },
           projects: {}
         };
         const metadata = { name: DRIVE_FILE_NAME, mimeType: "application/json" };
@@ -404,6 +457,10 @@
       sectionAuth.classList.add("hidden");
       headerRight.classList.remove("hidden");
       appLayout.classList.remove("hidden");
+
+      // 同步模型選單當前設定
+      selectLectureModel.value = getActiveLectureModel();
+      selectChatModel.value = getActiveChatModel();
 
       if (state.appData.geminiKey) {
         state.geminiKey = state.appData.geminiKey;
@@ -473,9 +530,10 @@
       return;
     }
 
+    const currentLectureModel = getActiveLectureModel();
     const originalText = triggerBtn.textContent;
     triggerBtn.disabled = true;
-    triggerBtn.textContent = "規劃大綱中 (3 Flash)...";
+    triggerBtn.textContent = `規劃大綱中 (${getModelLabel(currentLectureModel)})...`;
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
@@ -485,7 +543,7 @@
 2. 輸出格式必須是純 JSON 字串陣列，例如：["第 1 天: 主題名稱", "第 2 天: 主題名稱", ...]`;
 
       const res = await ai.models.generateContent({
-        model: LECTURE_MODEL,
+        model: currentLectureModel,
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });
@@ -663,9 +721,12 @@
     const ai = new GoogleGenAI({ apiKey: state.geminiKey });
     let cachedContent = currentProj.history[dayIdx]?.lessonContent;
 
+    const currentLectureModel = getActiveLectureModel();
+    const currentChatModel = getActiveChatModel();
+
     if (!cachedContent) {
       lectureContentBox.innerHTML = `<div style="text-align:center; padding: 40px; color: #64748b;">
-        <p style="font-weight:600; font-size:16px;">正在透過 Gemini 3 Flash 生成深度專業講義...</p>
+        <p style="font-weight:600; font-size:16px;">正在透過 ${getModelLabel(currentLectureModel)} 生成深度專業講義...</p>
         <p style="font-size:13px;">包含接續形態對照表、句型構造剖析與中日思維差異拆解，請稍候片刻。</p>
       </div>`;
 
@@ -702,7 +763,7 @@
 
       try {
         const res = await ai.models.generateContent({
-          model: LECTURE_MODEL,
+          model: currentLectureModel,
           contents: lecturePrompt
         });
 
@@ -719,11 +780,11 @@
     }
 
     renderMarkdownContent(lectureContentBox, cachedContent);
-    appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側隨時提供即時提問解答。`);
+    appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側由 ${getModelLabel(currentChatModel)} 隨時提供解答。`);
 
-    // 啟動 Gemini 3.1 Flash-Lite 作為即時互動助教
+    // 啟動所選的助教模型
     state.chatInstance = ai.chats.create({
-      model: CHAT_MODEL,
+      model: currentChatModel,
       config: {
         systemInstruction: `你是親切的日語課堂助教。
 學生正在閱讀單元「${title}」的詳細教材，教材內容如下：
@@ -777,6 +838,7 @@ ${cachedContent}
   async function handleGenerateQuiz() {
     const currentProj = state.appData.projects[state.appData.activeProjectId];
     const title = currentProj.plan[state.activeDayIndex];
+    const currentChatModel = getActiveChatModel();
 
     btnTriggerQuiz.disabled = true;
     btnTriggerQuiz.textContent = "生成測驗中...";
@@ -795,7 +857,7 @@ ${cachedContent}
 ]`;
 
       const res = await ai.models.generateContent({
-        model: CHAT_MODEL,
+        model: currentChatModel,
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });
