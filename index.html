@@ -13,18 +13,12 @@
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; color: #1e293b; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-    
-    /* 頂部導航列 */
-    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 30; }
+    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 20; height: 56px; }
     .header-left { display: flex; align-items: center; gap: 12px; }
-    header h1 { margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px; font-weight: 700; }
+    header h1 { margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
     .status-badge { font-size: 12px; background: #ecfdf5; color: #059669; padding: 4px 8px; border-radius: 9999px; font-weight: 500; }
 
-    /* 漢堡選單按鈕 */
-    .btn-hamburger { background: transparent; border: 1px solid #cbd5e1; color: #334155; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.15s, color 0.15s; }
-    .btn-hamburger:hover { background: #f1f5f9; color: #0f172a; }
-
-    #app-layout { display: flex; flex: 1; height: calc(100vh - 53px); overflow: hidden; position: relative; }
+    #app-layout { display: flex; flex: 1; height: calc(100vh - 56px); overflow: hidden; position: relative; }
     .hidden { display: none !important; }
 
     button { background: #2563eb; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; }
@@ -37,25 +31,46 @@
     .btn-danger { background: #ef4444; }
     .btn-danger:hover { background: #dc2626; }
 
-    /* 側邊專案欄 (平鋪及抽屜模式支援) */
-    aside { width: 260px; min-width: 260px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease; z-index: 40; height: 100%; }
-    
-    /* 課程學習模式下的側邊欄 (預設隱藏並作為抽屜) */
-    body.in-study-mode aside {
+    /* 側邊欄樣式：支援課程模式時的抽屜滑出效果 */
+    aside#main-sidebar {
+      width: 260px;
+      min-width: 260px;
+      background: #ffffff;
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease;
+      z-index: 30;
+    }
+
+    body.in-study-mode aside#main-sidebar {
       position: absolute;
       top: 0;
       bottom: 0;
       left: 0;
       transform: translateX(-100%);
-      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+      box-shadow: none;
     }
-    body.in-study-mode aside.drawer-open {
+
+    body.in-study-mode.drawer-open aside#main-sidebar {
       transform: translateX(0);
+      box-shadow: 10px 0 25px rgba(0, 0, 0, 0.1);
     }
 
-    .sidebar-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 35; backdrop-filter: blur(2px); transition: opacity 0.2s ease; }
+    #sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(1px);
+      z-index: 25;
+      display: none;
+    }
 
-    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+    body.in-study-mode.drawer-open #sidebar-overlay {
+      display: block;
+    }
+
+    .sidebar-header { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header h2 { margin: 0; font-size: 15px; }
     .project-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 8px; }
     .project-item { padding: 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; border: 1px solid transparent; }
@@ -67,7 +82,7 @@
     .btn-del-project:hover { background: #fee2e2; color: #ef4444; }
 
     main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; width: 100%; }
-    .content-container { max-width: 1100px; width: 100%; margin: 0 auto; padding: 24px; }
+    .content-container { max-width: 1080px; width: 100%; margin: 0 auto; padding: 24px; }
 
     .empty-state-card { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .empty-state-card h2 { margin-top: 0; color: #0f172a; font-size: 20px; }
@@ -91,35 +106,14 @@
     .day-card.locked .card-title { color: #64748b; }
     .day-card.locked button { background: #94a3b8; }
 
-    /* 雙欄寬敞學習介面 */
-    .study-layout { display: flex; height: 100%; width: 100%; gap: 16px; padding: 16px; overflow: hidden; }
+    .study-layout { display: flex; height: 100%; width: 100%; gap: 18px; padding: 16px 20px; overflow: hidden; }
     .lecture-panel { flex: 6; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     
-    /* 課程頂部：返回鍵置於左側標題旁 */
-    .lecture-header { padding: 12px 18px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-start; gap: 12px; background: #ffffff; }
-    
-    .btn-back-left {
-      background: #f1f5f9;
-      color: #334155;
-      border: 1px solid #cbd5e1;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-    .btn-back-left:hover {
-      background: #e2e8f0;
-      color: #0f172a;
-      transform: translateX(-2px);
-    }
+    .lecture-header { padding: 12px 18px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; background: #ffffff; gap: 14px; }
+    .btn-back-header { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.15s ease; }
+    .btn-back-header:hover { background: #e2e8f0; color: #0f172a; transform: translateX(-2px); }
 
-    .lecture-title-group { display: flex; flex-direction: column; overflow: hidden; }
+    .lecture-title-area { display: flex; flex-direction: column; justify-content: center; }
     .lecture-content { flex: 1; overflow-y: auto; padding: 24px; line-height: 1.75; font-size: 15px; color: #334155; }
     
     .interactive-panel { flex: 4; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -127,7 +121,7 @@
     .chat-scroll-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
     .chat-input-bar { padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #ffffff; display: flex; flex-direction: column; gap: 8px; }
 
-    .msg { padding: 10px 14px; border-radius: 8px; line-height: 1.5; max-width: 90%; font-size: 13.5px; }
+    .msg { padding: 10px 14px; border-radius: 8px; line-height: 1.5; max-width: 90%; font-size: 13.5px; word-break: break-word; }
     .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; }
     .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
     .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 12px; padding: 6px 12px; border-radius: 9999px; }
@@ -145,10 +139,17 @@
     .option-label:hover { background: #f1f5f9; }
     .explanation { margin-top: 8px; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #2563eb; font-size: 12.5px; }
 
-    .btn-icon { background: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 14px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-icon { background: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 15px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
     .btn-icon:hover { background: #f1f5f9; color: #0f172a; }
 
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 60; }
+    .btn-hamburger { display: none; background: #f1f5f9; border: 1px solid #cbd5e1; color: #1e293b; border-radius: 6px; padding: 5px 9px; font-size: 16px; cursor: pointer; line-height: 1; align-items: center; justify-content: center; }
+    .btn-hamburger:hover { background: #e2e8f0; }
+
+    body.in-study-mode .btn-hamburger {
+      display: inline-flex;
+    }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
     .modal-box { background: white; padding: 24px; border-radius: 12px; width: 440px; max-width: 90%; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     .modal-box h3 { margin-top: 0; margin-bottom: 12px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
@@ -174,10 +175,7 @@
 
   <header>
     <div class="header-left">
-      <!-- 漢堡三條槓按鈕 (在進入課程模式時可點選喚出抽屜) -->
-      <button id="btn-toggle-drawer" class="btn-hamburger hidden" title="切換專案清單">
-        ☰
-      </button>
+      <button id="btn-toggle-sidebar" class="btn-hamburger" title="切換專案清單">☰</button>
       <h1>日語文法學習工作台</h1>
     </div>
     <div id="header-right" class="hidden" style="display: flex; align-items: center; gap: 14px;">
@@ -186,11 +184,14 @@
     </div>
   </header>
 
+  <!-- 抽屜關閉遮罩 -->
+  <div id="sidebar-overlay"></div>
+
   <!-- 初始連線卡片 -->
   <div id="section-auth" style="max-width: 500px; margin: 60px auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
     <h2>連接 Google 雲端硬碟</h2>
     <p style="font-size: 14px; color: #64748b; line-height: 1.5;">
-      點擊下方按鈕登入 Google 帳號。專案紀錄、生成的詳細教材與複習進度皆會自動儲存於雲端空間中。
+      點擊下方按鈕登入 Google 帳號。專案紀錄、生成的詳細教材、對話記錄與複習進度皆會自動儲存於雲端空間中。
     </p>
 
     <div id="env-file-warning" class="hidden" style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px; margin: 14px 0; font-size: 13px; color: #991b1b; line-height: 1.5;">
@@ -211,10 +212,7 @@
   </div>
 
   <div id="app-layout" class="hidden">
-    <!-- 抽屜模式下的半透明背景遮罩 -->
-    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
-
-    <!-- 左側專案清單 (支援平鋪與抽屜模式) -->
+    <!-- 左側專案清單 -->
     <aside id="main-sidebar">
       <div class="sidebar-header">
         <h2>學習專案</h2>
@@ -224,7 +222,7 @@
     </aside>
 
     <!-- 右側主要操作區 -->
-    <main id="main-content-area">
+    <main>
       <!-- 視圖 0: 當沒有任何專案時，直接顯示整頁新建表單 -->
       <section id="view-empty-create" class="content-container hidden">
         <div class="empty-state-card">
@@ -254,18 +252,18 @@
         <div id="day-cards-grid" class="cards-grid"></div>
       </section>
 
-      <!-- 視圖 B: 雙欄寬敞學習介面 (標題左側配備精簡返回按鈕) -->
+      <!-- 視圖 B: 雙欄寬敞學習介面 -->
       <section id="view-study" class="study-layout hidden">
         <!-- 左欄：深度教材閱讀專區 -->
         <div class="lecture-panel">
           <div class="lecture-header">
-            <!-- 移至左側標題前的精簡返回按鈕 -->
-            <button id="btn-back-cards-left" class="btn-back-left" title="返回日程卡片清單">
-              ← 返回日程
+            <button id="btn-back-cards-left" class="btn-back-header" title="返回日程卡片清單">
+              <span>←</span>
+              <span>返回日程</span>
             </button>
-            <div class="lecture-title-group">
-              <span id="lecture-day-tag" style="font-size: 11px; font-weight: 700; color: #2563eb;">DAY 1</span>
-              <h2 id="study-day-title" style="margin: 0; font-size: 17px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">教材標題</h2>
+            <div class="lecture-title-area">
+              <span id="lecture-day-tag" style="font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase;">DAY 1</span>
+              <h2 id="study-day-title" style="margin: 2px 0 0; font-size: 17px; color: #0f172a; font-weight: 700;">教材標題</h2>
             </div>
           </div>
           <div id="lecture-content-box" class="lecture-content">
@@ -415,10 +413,8 @@
   const sectionAuth = document.getElementById("section-auth");
   const appLayout = document.getElementById("app-layout");
   const headerRight = document.getElementById("header-right");
-  const btnToggleDrawer = document.getElementById("btn-toggle-drawer");
-  const mainSidebar = document.getElementById("main-sidebar");
+  const btnToggleSidebar = document.getElementById("btn-toggle-sidebar");
   const sidebarOverlay = document.getElementById("sidebar-overlay");
-
   const btnOpenSettings = document.getElementById("btn-open-settings-modal");
   const modalSettings = document.getElementById("modal-settings");
   const btnCloseSettingsX = document.getElementById("btn-close-settings-x");
@@ -503,38 +499,34 @@
     }
   });
 
-  function openDrawer() {
-    mainSidebar.classList.add("drawer-open");
-    sidebarOverlay.classList.remove("hidden");
-  }
-
-  function closeDrawer() {
-    mainSidebar.classList.remove("drawer-open");
-    sidebarOverlay.classList.add("hidden");
-  }
-
-  btnToggleDrawer.addEventListener("click", () => {
-    if (mainSidebar.classList.contains("drawer-open")) {
-      closeDrawer();
-    } else {
-      openDrawer();
-    }
-  });
-
-  sidebarOverlay.addEventListener("click", closeDrawer);
-
   chkCustomClientId.addEventListener("change", (e) => {
     boxCustomClientId.classList.toggle("hidden", !e.target.checked);
   });
   btnLogin.addEventListener("click", handleGoogleAuth);
   btnSaveKey.addEventListener("click", handleSaveApiKey);
-  btnOpenNewProject.addEventListener("click", () => modalNewProject.classList.remove("hidden"));
+  btnOpenNewProject.addEventListener("click", () => {
+    closeSidebarDrawer();
+    modalNewProject.classList.remove("hidden");
+  });
   btnCancelNewProject.addEventListener("click", () => modalNewProject.classList.add("hidden"));
   btnConfirmCreateProject.addEventListener("click", () => executeCreateProject(inputNewGoal.value, inputNewDays.value, btnConfirmCreateProject, modalNewProject));
   btnEmptyCreate.addEventListener("click", () => executeCreateProject(inputEmptyGoal.value, inputEmptyDays.value, btnEmptyCreate, null));
+  
   btnBackCardsLeft.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
+
+  btnToggleSidebar.addEventListener("click", () => {
+    document.body.classList.toggle("drawer-open");
+  });
+
+  sidebarOverlay.addEventListener("click", () => {
+    closeSidebarDrawer();
+  });
+
+  function closeSidebarDrawer() {
+    document.body.classList.remove("drawer-open");
+  }
 
   const DETAIL_NAMES = { 1: "簡答", 2: "適中", 3: "詳盡" };
 
@@ -731,14 +723,18 @@
 
   async function saveProgressToDrive() {
     if (!state.driveFileId) return;
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${state.driveFileId}?uploadType=media`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${state.accessToken}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(state.appData)
-    });
+    try {
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${state.driveFileId}?uploadType=media`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${state.accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(state.appData)
+      });
+    } catch (err) {
+      console.error("雲端同步失敗：", err);
+    }
   }
 
   async function handleSaveApiKey() {
@@ -760,9 +756,7 @@
     renderSidebar();
 
     if (projectKeys.length === 0) {
-      document.body.classList.remove("in-study-mode");
-      btnToggleDrawer.classList.add("hidden");
-      closeDrawer();
+      document.body.classList.remove("in-study-mode", "drawer-open");
       viewStudy.classList.add("hidden");
       viewDashboard.classList.add("hidden");
       modalNewProject.classList.add("hidden");
@@ -872,7 +866,7 @@
         state.appData.activeProjectId = proj.id;
         saveProgressToDrive();
         renderSidebar();
-        closeDrawer();
+        closeSidebarDrawer();
         showCardsDashboard();
       });
 
@@ -882,11 +876,7 @@
   }
 
   function showCardsDashboard() {
-    // 退出學習模式：恢復平鋪側邊欄，隱藏漢堡按鈕與遮罩
-    document.body.classList.remove("in-study-mode");
-    btnToggleDrawer.classList.add("hidden");
-    closeDrawer();
-
+    document.body.classList.remove("in-study-mode", "drawer-open");
     viewStudy.classList.add("hidden");
     viewEmptyCreate.classList.add("hidden");
     viewDashboard.classList.remove("hidden");
@@ -966,11 +956,8 @@
 
   async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
-
-    // 進入學習模式：側邊欄收起為抽屜，左上方顯示漢堡按鈕
     document.body.classList.add("in-study-mode");
-    btnToggleDrawer.classList.remove("hidden");
-    closeDrawer();
+    closeSidebarDrawer();
 
     viewDashboard.classList.add("hidden");
     viewEmptyCreate.classList.add("hidden");
@@ -986,6 +973,15 @@
     lectureDayTag.textContent = `DAY ${dayIdx + 1}`;
 
     if (!currentProj.history) currentProj.history = {};
+    if (!currentProj.history[dayIdx]) {
+      currentProj.history[dayIdx] = {
+        lessonContent: "",
+        completed: false,
+        chatHistory: []
+      };
+    } else if (!currentProj.history[dayIdx].chatHistory) {
+      currentProj.history[dayIdx].chatHistory = [];
+    }
 
     const ai = new GoogleGenAI({ apiKey: state.geminiKey });
     let cachedContent = currentProj.history[dayIdx]?.lessonContent;
@@ -1042,10 +1038,7 @@
         });
 
         cachedContent = res.text;
-        currentProj.history[dayIdx] = {
-          lessonContent: cachedContent,
-          completed: false
-        };
+        currentProj.history[dayIdx].lessonContent = cachedContent;
         await saveProgressToDrive();
       } catch (e) {
         lectureContentBox.innerHTML = `<p style="color: #ef4444;">教材載入失敗：${e.message}</p>`;
@@ -1054,10 +1047,30 @@
     }
 
     renderMarkdownContent(lectureContentBox, cachedContent);
-    appendChatMessage("system", `已載入【${title}】完整講義（針對「${projectGoal}」客製規劃）。左側為深度教材，右側由 ${getModelLabel(currentChatModel)} 隨時提供解答。`);
+
+    // 處理歷史對話還原與 Gemini Context 載入
+    const savedChat = currentProj.history[dayIdx].chatHistory || [];
+    const geminiChatHistory = [];
+
+    if (savedChat.length === 0) {
+      const defaultWelcome = `已載入【${title}】完整講義（針對「${projectGoal}」客製規劃）。左側為深度教材，右側由 ${getModelLabel(currentChatModel)} 隨時提供解答。`;
+      appendChatMessage("system", defaultWelcome, true);
+    } else {
+      // 重新繪製先前保存的對話泡泡
+      savedChat.forEach(msg => {
+        appendChatMessage(msg.type, msg.content, false);
+        // 將使用者與模型對答組裝入 Gemini SDK 的歷史格式
+        if (msg.type === "user") {
+          geminiChatHistory.push({ role: "user", parts: [{ text: msg.content }] });
+        } else if (msg.type === "bot") {
+          geminiChatHistory.push({ role: "model", parts: [{ text: msg.content }] });
+        }
+      });
+    }
 
     state.chatInstance = ai.chats.create({
       model: currentChatModel,
+      history: geminiChatHistory,
       config: {
         systemInstruction: `你是親切的日語課堂助教。
 學生目前的學習專案為：【${projectGoal}】。
@@ -1075,7 +1088,7 @@ ${cachedContent}
     const text = inputMessage.value.trim();
     if (!text || !state.chatInstance) return;
 
-    appendChatMessage("user", text);
+    appendChatMessage("user", text, true);
     inputMessage.value = "";
 
     const typingId = "typing-" + Date.now();
@@ -1099,14 +1112,14 @@ ${cachedContent}
     try {
       const res = await state.chatInstance.sendMessage({ message: text + detailConstraint });
       document.getElementById(typingId)?.remove();
-      appendChatMessage("bot", res.text);
+      appendChatMessage("bot", res.text, true);
     } catch (err) {
       document.getElementById(typingId)?.remove();
-      appendChatMessage("system", "回覆取得失敗：" + err.message);
+      appendChatMessage("system", "回覆取得失敗：" + err.message, true);
     }
   }
 
-  function appendChatMessage(type, content) {
+  function appendChatMessage(type, content, shouldPersist = true) {
     const div = document.createElement("div");
     div.className = `msg msg-${type}`;
     if (type === "system") {
@@ -1116,6 +1129,18 @@ ${cachedContent}
     }
     chatBox.appendChild(div);
     chatBox.scrollTop = chatBox.scrollHeight;
+
+    // 持久化儲存到雲端資料結構中
+    if (shouldPersist && state.activeDayIndex !== null) {
+      const currentProj = state.appData.projects[state.appData.activeProjectId];
+      if (currentProj && currentProj.history && currentProj.history[state.activeDayIndex]) {
+        if (!currentProj.history[state.activeDayIndex].chatHistory) {
+          currentProj.history[state.activeDayIndex].chatHistory = [];
+        }
+        currentProj.history[state.activeDayIndex].chatHistory.push({ type, content });
+        saveProgressToDrive();
+      }
+    }
   }
 
   async function handleGenerateQuiz() {
