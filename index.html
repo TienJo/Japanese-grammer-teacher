@@ -17,78 +17,87 @@
     #app-layout { display: flex; flex: 1; height: calc(100vh - 57px); overflow: hidden; }
     .hidden { display: none !important; }
 
-    /* 通用元件 */
+    /* 通用按鈕 */
     button { background: #2563eb; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #94a3b8; cursor: not-allowed; }
     .btn-green { background: #059669; }
     .btn-green:hover { background: #047857; }
-    .btn-danger { background: #ef4444; }
-    .btn-danger:hover { background: #dc2626; }
     .btn-gray { background: #64748b; }
     .btn-gray:hover { background: #475569; }
 
     /* 左側側邊欄：專案組清單 */
-    aside { width: 280px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
+    aside { width: 260px; min-width: 260px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
     .sidebar-header { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header h2 { margin: 0; font-size: 15px; }
     .project-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 8px; }
     .project-item { padding: 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; border: 1px solid transparent; }
     .project-item:hover { background: #f1f5f9; }
     .project-item.active { background: #eff6ff; border-color: #bfdbfe; }
-    .project-title { font-size: 14px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px; }
+    .project-title { font-size: 14px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
     .project-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
     .btn-del-project { background: transparent; color: #94a3b8; padding: 4px 6px; font-size: 16px; border-radius: 4px; }
     .btn-del-project:hover { background: #fee2e2; color: #ef4444; }
 
     /* 右側主工作區 */
-    main { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; }
-    .content-container { max-width: 960px; width: 100%; margin: 0 auto; }
+    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .content-container { max-width: 1080px; width: 100%; margin: 0 auto; padding: 24px; }
 
     /* 日卡 (Day Cards) 網格 */
     .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
     .dashboard-header h2 { margin: 0; font-size: 22px; }
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
     
     .day-card { background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-height: 140px; transition: transform 0.15s, box-shadow 0.15s; position: relative; }
     .day-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.06); }
-    
     .card-day-tag { font-size: 12px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 6px; }
     .card-title { font-size: 15px; font-weight: 600; color: #0f172a; line-height: 1.4; margin-bottom: 12px; }
     .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
     
-    /* 日卡三種狀態 */
+    /* 日卡狀態樣式 */
     .day-card.completed { border-left: 4px solid #10b981; }
     .day-card.completed .card-day-tag { color: #059669; }
     .day-card.current { border: 2px solid #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
-    
-    /* 尚未學到的灰色狀態 */
     .day-card.locked { background: #f8fafc; border-color: #e2e8f0; opacity: 0.65; filter: grayscale(80%); }
     .day-card.locked:hover { transform: none; box-shadow: none; }
     .day-card.locked .card-day-tag { color: #94a3b8; }
     .day-card.locked .card-title { color: #64748b; }
     .day-card.locked button { background: #94a3b8; }
 
-    /* 課堂學習與對話畫面 */
-    .study-wrapper { background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    #chat-box { height: 460px; overflow-y: auto; border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; background: #f8fafc; margin: 16px 0; display: flex; flex-direction: column; gap: 14px; }
-    .msg { padding: 12px 18px; border-radius: 8px; line-height: 1.6; max-width: 90%; font-size: 14px; }
+    /* 寬敞學習介面：雙欄設計 */
+    .study-layout { display: flex; height: 100%; width: 100%; gap: 20px; padding: 20px; overflow: hidden; }
+    
+    /* 左半部：深度講義區塊 (60%) */
+    .lecture-panel { flex: 6; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .lecture-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+    .lecture-content { flex: 1; overflow-y: auto; padding: 24px; line-height: 1.75; font-size: 15px; color: #334155; }
+    
+    /* 右半部：對話問答與測驗區塊 (40%) */
+    .interactive-panel { flex: 4; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .interactive-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 15px; }
+    .chat-scroll-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
+    .chat-input-bar { padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #ffffff; display: flex; flex-direction: column; gap: 8px; }
+
+    /* 訊息氣泡 */
+    .msg { padding: 10px 14px; border-radius: 8px; line-height: 1.5; max-width: 90%; font-size: 13.5px; }
     .msg-bot { background: #ffffff; border: 1px solid #e2e8f0; align-self: flex-start; color: #0f172a; }
     .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
-    .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 13px; text-align: center; }
+    .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 12px; padding: 6px 12px; border-radius: 9999px; }
 
-    /* Markdown 元素美化 */
-    .msg-bot h1, .msg-bot h2, .msg-bot h3 { margin-top: 10px; margin-bottom: 6px; color: #0f172a; }
-    .msg-bot table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
-    .msg-bot th, .msg-bot td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: left; }
-    .msg-bot th { background-color: #f1f5f9; }
-    .msg-bot code { background-color: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
+    /* Markdown 排版美化 (包含表格、粗體、清單) */
+    .lecture-content h1, .lecture-content h2, .lecture-content h3 { color: #0f172a; margin-top: 24px; margin-bottom: 10px; }
+    .lecture-content h2 { border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; }
+    .lecture-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+    .lecture-content th, .lecture-content td { border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left; }
+    .lecture-content th { background-color: #f1f5f9; font-weight: 600; }
+    .lecture-content blockquote { margin: 12px 0; padding: 8px 16px; border-left: 4px solid #2563eb; background: #f8fafc; color: #475569; }
+    .lecture-content code { background: #e2e8f0; padding: 2px 4px; border-radius: 4px; font-family: monospace; font-size: 13px; }
 
     /* 測驗樣式 */
-    .quiz-card { border: 1px solid #e2e8f0; padding: 16px; border-radius: 8px; margin-top: 14px; background: #ffffff; }
-    .option-label { display: block; margin: 8px 0; cursor: pointer; padding: 6px 8px; border-radius: 4px; }
+    .quiz-card { border: 1px solid #e2e8f0; padding: 14px; border-radius: 8px; margin-top: 10px; background: #ffffff; }
+    .option-label { display: block; margin: 6px 0; cursor: pointer; padding: 4px 6px; border-radius: 4px; font-size: 13px; }
     .option-label:hover { background: #f1f5f9; }
-    .explanation { margin-top: 10px; padding: 10px; background: #f8fafc; border-left: 4px solid #2563eb; font-size: 13px; }
+    .explanation { margin-top: 8px; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #2563eb; font-size: 12.5px; }
 
     /* 彈跳視窗 Modal */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
@@ -106,15 +115,15 @@
   <header>
     <h1>日語文法學習工作台</h1>
     <div id="header-right" class="hidden">
-      <span class="status-badge" id="cloud-status">雲端已連線</span>
+      <span class="status-badge" id="cloud-status">Google Drive 已連線</span>
     </div>
   </header>
 
-  <!-- 初始連線卡片 (全螢幕居中) -->
+  <!-- 初始連線卡片 -->
   <div id="section-auth" style="max-width: 500px; margin: 60px auto; background: #fff; padding: 32px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
     <h2>連接 Google 雲端硬碟</h2>
     <p style="font-size: 14px; color: #64748b; line-height: 1.5;">
-      點擊下方按鈕以登入 Google 帳號。所有建立的專案、日卡大綱與上課對話皆會安全保存在個人 Google 雲端硬碟中。
+      點擊下方按鈕登入 Google 帳號。專案紀錄、生成的詳細教材與複習進度皆會自動儲存於雲端空間中。
     </p>
 
     <div style="margin: 16px 0;">
@@ -122,62 +131,67 @@
         <input type="checkbox" id="chk-custom-client-id" style="width: auto; margin-right: 4px;"> 顯示自訂 Client ID
       </label>
       <div id="box-custom-client-id" class="hidden" style="margin-top: 8px;">
-        <input type="text" id="input-client-id" value="865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com" style="width: 100%; padding: 8px; font-size: 13px;">
+        <input type="text" id="input-client-id" value="865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com" style="width: 100%; padding: 8px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 6px;">
       </div>
     </div>
 
     <button id="btn-login" style="width: 100%; padding: 12px; font-size: 15px;">登入 Google 帳號</button>
   </div>
 
-  <!-- 主工作台：雙欄佈局 (預設隱藏) -->
+  <!-- 主工作台：雙欄結構 -->
   <div id="app-layout" class="hidden">
     <!-- 左側專案清單 -->
-    <aside>
+    <aside id="main-sidebar">
       <div class="sidebar-header">
-        <h2>專案組</h2>
+        <h2>學習專案</h2>
         <button id="btn-open-new-project-modal" style="padding: 4px 10px; font-size: 12px;">+ 新建計畫</button>
       </div>
-      <ul id="project-list" class="project-list">
-        <!-- 動態渲染專案項目 -->
-      </ul>
+      <ul id="project-list" class="project-list"></ul>
     </aside>
 
     <!-- 右側主要操作區 -->
     <main>
-      <div class="content-container">
-        <!-- 視圖 A: 專案日卡看板 -->
-        <section id="view-dashboard">
-          <div class="dashboard-header">
+      <!-- 視圖 A: 專案日卡看板 -->
+      <section id="view-dashboard" class="content-container">
+        <div class="dashboard-header">
+          <div>
+            <h2 id="view-project-title">載入中...</h2>
+            <span id="view-project-progress" style="font-size: 13px; color: #64748b;">計算進度中...</span>
+          </div>
+        </div>
+        <div id="day-cards-grid" class="cards-grid"></div>
+      </section>
+
+      <!-- 視圖 B: 雙欄寬敞學習介面 -->
+      <section id="view-study" class="study-layout hidden">
+        <!-- 左欄：3.7 Flash 深度教材閱讀專區 -->
+        <div class="lecture-panel">
+          <div class="lecture-header">
             <div>
-              <h2 id="view-project-title">載入中...</h2>
-              <span id="view-project-progress" style="font-size: 13px; color: #64748b;">進度計算中...</span>
+              <span id="lecture-day-tag" style="font-size: 12px; font-weight: 700; color: #2563eb;">DAY 1</span>
+              <h2 id="study-day-title" style="margin: 2px 0 0; font-size: 18px; color: #0f172a;">教材標題</h2>
             </div>
+            <button id="btn-back-cards" class="btn-gray">返回日程清單</button>
           </div>
-          <div id="day-cards-grid" class="cards-grid">
-            <!-- 動態產生各天的日卡 -->
+          <div id="lecture-content-box" class="lecture-content">
+            <p style="color: #94a3b8;">正在準備教材...</p>
           </div>
-        </section>
+        </div>
 
-        <!-- 視圖 B: 課堂學習與問答對話 -->
-        <section id="view-study" class="hidden">
-          <div class="study-wrapper">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h2 id="study-day-title" style="margin: 0; font-size: 18px;">單元名稱</h2>
-              <button id="btn-back-cards" class="btn-gray">返回日卡清單</button>
+        <!-- 右欄：3.1 Flash-Lite 即時助教問答與隨堂測驗 -->
+        <div class="interactive-panel">
+          <div class="interactive-header">AI 助教對話與隨堂測驗</div>
+          <div id="chat-box" class="chat-scroll-area"></div>
+          <div class="chat-input-bar">
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="input-message" placeholder="針對左側教材有任何疑問，請在此發問..." style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+              <button id="btn-send-message">提問</button>
             </div>
-
-            <div id="chat-box"></div>
-
-            <div style="display: flex; gap: 8px;">
-              <input type="text" id="input-message" placeholder="針對上方內容有疑問可直接發問..." style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
-              <button id="btn-send-message">發送提問</button>
-              <button id="btn-trigger-quiz" class="btn-green">今日小測驗</button>
-            </div>
-
-            <div id="quiz-container"></div>
+            <button id="btn-trigger-quiz" class="btn-green" style="width: 100%;">進行今日隨堂測驗</button>
           </div>
-        </section>
-      </div>
+          <div id="quiz-container" style="max-height: 240px; overflow-y: auto; padding: 0 16px 16px;"></div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -186,11 +200,11 @@
     <div class="modal-box">
       <h3>設定 Gemini API Key</h3>
       <p style="font-size: 13px; color: #64748b; line-height: 1.4;">
-        這是初次登入，請提供 Gemini API Key。金鑰將加密儲存於個人 Google Drive 中，往後自動讀取。
+        初次使用請輸入 Gemini API Key。金鑰將安全儲存於你個人的 Google Drive 中，往後打開自動連線。
       </p>
       <input type="password" id="input-gemini-key" placeholder="AIzaSy..." style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 12px 0;">
       <div class="modal-actions">
-        <button id="btn-save-key">儲存並繼續</button>
+        <button id="btn-save-key">儲存至雲端並繼續</button>
       </div>
     </div>
   </div>
@@ -199,8 +213,8 @@
   <div id="modal-new-project" class="modal-overlay hidden">
     <div class="modal-box">
       <h3>新增學習計畫專案</h3>
-      <label style="font-size: 13px; font-weight: 600; display: block; margin-top: 10px;">專案目標 / 名稱：</label>
-      <input type="text" id="input-new-goal" placeholder="例如：JLPT N3 核心文法、日常口語接續詞" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px;">
+      <label style="font-size: 13px; font-weight: 600; display: block; margin-top: 10px;">專案目標 / 主題：</label>
+      <input type="text" id="input-new-goal" placeholder="例如：JLPT N3 核心文法、日常口語接續詞精修" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px;">
 
       <label style="font-size: 13px; font-weight: 600; display: block; margin-top: 12px;">規劃天數：</label>
       <input type="number" id="input-new-days" value="14" min="1" max="90" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; margin-top: 4px;">
@@ -215,12 +229,14 @@
 <script type="module">
   import { GoogleGenAI } from "https://esm.run/@google/genai";
 
-  const MODEL_NAME = "gemini-3.1-flash-lite";
+  // 模型架構分工
+  const LECTURE_MODEL = "gemini-3.7-flash";       // 深度長文教材與大綱生成
+  const CHAT_MODEL = "gemini-3.1-flash-lite";     // 即時互動對話與測驗
+  
   const DEFAULT_CLIENT_ID = "865993916714-o0h883itsqd3lvgbatmkgqrqqhbrmuhf.apps.googleusercontent.com";
   const DRIVE_FILE_NAME = "japanese_grammar_multi_projects.json";
   const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
-  // 全域狀態
   const state = {
     geminiKey: "",
     accessToken: null,
@@ -228,7 +244,7 @@
     appData: {
       geminiKey: "",
       activeProjectId: null,
-      projects: {} // { [id]: { id, goal, totalDays, plan: [], currentDayIndex: 0, history: {} } }
+      projects: {}
     },
     activeDayIndex: null,
     chatInstance: null
@@ -262,6 +278,8 @@
   const dayCardsGrid = document.getElementById("day-cards-grid");
 
   const studyDayTitle = document.getElementById("study-day-title");
+  const lectureDayTag = document.getElementById("lecture-day-tag");
+  const lectureContentBox = document.getElementById("lecture-content-box");
   const chatBox = document.getElementById("chat-box");
   const inputMessage = document.getElementById("input-message");
   const btnSendMessage = document.getElementById("btn-send-message");
@@ -269,7 +287,7 @@
   const btnBackCards = document.getElementById("btn-back-cards");
   const quizContainer = document.getElementById("quiz-container");
 
-  // 事件監聽綁定
+  // 事件綁定
   chkCustomClientId.addEventListener("change", (e) => {
     boxCustomClientId.classList.toggle("hidden", !e.target.checked);
   });
@@ -286,7 +304,7 @@
     if (e.key === "Enter") handleSendMessage();
   });
 
-  // 1. Google 授權與驗證
+  // 1. Google 授權
   function handleGoogleAuth() {
     const clientId = inputClientId.value.trim() || DEFAULT_CLIENT_ID;
 
@@ -316,7 +334,7 @@
     client.requestAccessToken();
   }
 
-  // 2. Google Drive 多專案資料讀取與同步
+  // 2. Google Drive 資料同步
   async function syncDataFromDrive() {
     try {
       const q = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
@@ -332,7 +350,6 @@
         });
         state.appData = await fileContentRes.json();
       } else {
-        // 初次建立雲端檔案
         state.appData = {
           geminiKey: "",
           activeProjectId: null,
@@ -398,7 +415,6 @@
   function initAppFlow() {
     const projectKeys = Object.keys(state.appData.projects || {});
     if (projectKeys.length === 0) {
-      // 若無任何專案，引導開啟新建專案視窗
       modalNewProject.classList.remove("hidden");
     } else {
       if (!state.appData.activeProjectId || !state.appData.projects[state.appData.activeProjectId]) {
@@ -420,17 +436,17 @@
     }
 
     btnConfirmCreateProject.disabled = true;
-    btnConfirmCreateProject.textContent = "規劃大綱中...";
+    btnConfirmCreateProject.textContent = "規劃大綱中 (3.7 Flash)...";
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      const prompt = `你是一位專業的日語教學專家。請根據目標「${goal}」規劃 ${days} 天的每日學習大綱。
+      const prompt = `你是一位專業的日語教學名師。請根據目標「${goal}」規劃 ${days} 天的每日學習大綱。
 要求：
-1. 每日主題具體包含特定文法、接續詞或情境表現。
-2. 輸出格式必須是純 JSON 字串陣列，格式如：["第 1 天: 主題名稱", "第 2 天: 主題名稱", ...]`;
+1. 每日主題必須聚焦具體的文法接續、核心句型或特定詞性構造。
+2. 輸出格式必須是純 JSON 字串陣列，例如：["第 1 天: 主題名稱", "第 2 天: 主題名稱", ...]`;
 
       const res = await ai.models.generateContent({
-        model: MODEL_NAME,
+        model: LECTURE_MODEL,
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });
@@ -459,7 +475,7 @@
       showCardsDashboard();
     } catch (e) {
       console.error(e);
-      alert("規劃生成失敗：" + e.message);
+      alert("大綱生成失敗：" + e.message);
       btnConfirmCreateProject.disabled = false;
       btnConfirmCreateProject.textContent = "開始規劃大綱";
     }
@@ -468,7 +484,7 @@
   async function handleDeleteProject(id, e) {
     e.stopPropagation();
     const proj = state.appData.projects[id];
-    if (confirm(`確定要刪除「${proj.goal}」專案嗎？相關學習記錄將全數移除。`)) {
+    if (confirm(`確定要刪除「${proj.goal}」專案嗎？相關進度與教材將一併移除。`)) {
       delete state.appData.projects[id];
       const remaining = Object.keys(state.appData.projects);
       state.appData.activeProjectId = remaining.length > 0 ? remaining[0] : null;
@@ -477,7 +493,6 @@
     }
   }
 
-  // 4. 左側欄專案渲染
   function renderSidebar() {
     projectListElem.innerHTML = "";
     const projects = state.appData.projects || {};
@@ -508,7 +523,7 @@
     });
   }
 
-  // 5. 右側：專案日卡看板（含灰色未解鎖狀態）
+  // 4. 日卡看板
   function showCardsDashboard() {
     viewStudy.classList.add("hidden");
     viewDashboard.classList.remove("hidden");
@@ -531,7 +546,6 @@
       const isLocked = idx > currentActiveIndex && !isCompleted;
 
       const card = document.createElement("div");
-      // 套用狀態樣式：completed / current / locked(灰色)
       card.className = `day-card ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${isLocked ? 'locked' : ''}`;
 
       card.innerHTML = `
@@ -551,7 +565,7 @@
 
       card.querySelector(`#btn-card-action-${idx}`).addEventListener("click", () => {
         if (isLocked) {
-          if (confirm("這天為後續進度，建議循序漸進。確定要提前進入學習嗎？")) {
+          if (confirm("這天為後續單元。建議循序漸進，確定要提前進入學習嗎？")) {
             startDayStudy(idx);
           }
         } else {
@@ -565,7 +579,7 @@
     viewProjectProgress.textContent = `完成度：${completedCount} / ${currentProj.plan.length} 天 (${Math.round((completedCount/currentProj.plan.length)*100)}%)`;
   }
 
-  // 6. 進入課堂學習對話
+  // 5. 進入雙欄學習介面（3.7 Flash 深度教材 + 3.1 Flash-Lite 助教）
   async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
     viewDashboard.classList.add("hidden");
@@ -577,6 +591,7 @@
     const currentProj = state.appData.projects[state.appData.activeProjectId];
     const title = currentProj.plan[dayIdx];
     studyDayTitle.textContent = title;
+    lectureDayTag.textContent = `DAY ${dayIdx + 1}`;
 
     if (!currentProj.history) currentProj.history = {};
 
@@ -584,24 +599,44 @@
     let cachedContent = currentProj.history[dayIdx]?.lessonContent;
 
     if (!cachedContent) {
-      appendMessage("system", `正在使用 Gemini 3.1 Flash-Lite 生成【${title}】的今日教材...`);
+      lectureContentBox.innerHTML = `<div style="text-align:center; padding: 40px; color: #64748b;">
+        <p style="font-weight:600; font-size:16px;">正在透過 Gemini 3.7 Flash 生成深度專業講義...</p>
+        <p style="font-size:13px;">包含接續形態對照表、句型構造剖析與中日思維差異拆解，請稍候片刻。</p>
+      </div>`;
 
-      const prompt = `請為今日主題「${title}」撰寫完整的教學內容，請嚴格使用 Markdown 格式呈現（包含粗體、列表、表格與程式碼區塊）：
-1. ### 核心概念與接續規則
-詳細說明動詞/形容詞形態、接續助詞及核心含意。
-2. ### 結構解析與常犯錯誤
-剖析句型結構，指出中文母語者最容易犯錯的助詞誤用。
-3. ### 情境例句
-提供 3~4 個生活實用例句（包含假名標記與中文翻譯）。
-4. ### 總結口訣
-提煉一句話記憶重點。
+      // 深度長篇講義 Prompt
+      const lecturePrompt = `你是一位精通比較語言學與日語教學的文法專家。
+請針對今日文法核心主題「${title}」撰寫一份完整、嚴謹且深度充足的專業教學講義。
 
-結尾提示學生：若有不懂之處可直接在此提問；確認理解後請點選「今日小測驗」。`;
+請一律使用清楚的 Markdown 格式，並且嚴格涵蓋以下五大核心模組：
+
+# 【${title}】深度文法解析講義
+
+## 一、 文法核心接續與詞性構造規則
+- 詳細拆解動詞（Ⅰ類/五段、Ⅱ類/一段、Ⅲ類/サ變與カ變）、名詞、い形容詞、な形容詞的接續形態。
+- 請使用 **Markdown 表格** 明確呈現各詞性的接續公式與變化形態對照表。
+
+## 二、 句型結構與深層語義拆解
+- 剖析句子結構骨架（主語、助詞格位、謂語關係）。
+- 釐清本句型所帶有的語氣（如：義務、推測、委婉、意志、授受），並指出助詞在該句型中的特定作用。
+
+## 三、 日中思維與語感差異剖析（母語者避坑專區）
+- 指出中文母語學習者最容易犯的「中式日語」思維錯誤或助詞混淆點。
+- 列舉 1~2 個極易混淆的相似文法（例如：に／で、は／が、授受動詞方向等）進行對比辨析。
+
+## 四、 實戰生活情境例句（附中日對照）
+請提供 4 個具備不同生活與商務情境的例句，每個例句請包含：
+1. **日語原文**（平假名/漢字標註）
+2. **直譯與意譯**（說明中文意思）
+3. **語境解析**（說明說話者的心態、語氣強弱或使用場合）
+
+## 五、 文法總結與快速記憶口訣
+- 用一句話或朗朗上口的口訣總結今天核心規則。`;
 
       try {
         const res = await ai.models.generateContent({
-          model: MODEL_NAME,
-          contents: prompt
+          model: LECTURE_MODEL,
+          contents: lecturePrompt
         });
 
         cachedContent = res.text;
@@ -611,38 +646,48 @@
         };
         await saveProgressToDrive();
       } catch (e) {
-        appendMessage("system", "教材載入失敗：" + e.message);
+        lectureContentBox.innerHTML = `<p style="color: #ef4444;">教材載入失敗：${e.message}</p>`;
         return;
       }
     }
 
-    appendMessage("bot", cachedContent);
+    // 渲染講義到左欄
+    lectureContentBox.innerHTML = marked.parse(cachedContent);
 
+    // 初始歡迎訊息至右側對話框
+    appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側隨時提供即時提問解答。`);
+
+    // 初始化 3.1 Flash-Lite 對話 Session，注入講義作為背景資料
     state.chatInstance = ai.chats.create({
-      model: MODEL_NAME,
+      model: CHAT_MODEL,
       config: {
-        systemInstruction: `你是親切的日語助教。目前正在進行單元「${title}」的學習，教材內容如下：\n\n${cachedContent}\n\n請根據上方教材與使用者的提問給予精準、易懂的繁體中文解答，回覆請善用 Markdown 格式以利閱讀。`
+        systemInstruction: `你是親切的日語課堂助教。
+學生正在閱讀單元「${title}」的詳細教材，教材內容如下：
+
+${cachedContent}
+
+請根據上方教材內容與學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。`
       }
     });
   }
 
-  // 7. 發送問題
+  // 6. 右側即時提問 (3.1 Flash-Lite)
   async function handleSendMessage() {
     const text = inputMessage.value.trim();
     if (!text || !state.chatInstance) return;
 
-    appendMessage("user", text);
+    appendChatMessage("user", text);
     inputMessage.value = "";
 
     try {
       const res = await state.chatInstance.sendMessage({ message: text });
-      appendMessage("bot", res.text);
+      appendChatMessage("bot", res.text);
     } catch (err) {
-      appendMessage("system", "回覆取得失敗：" + err.message);
+      appendChatMessage("system", "回覆取得失敗：" + err.message);
     }
   }
 
-  function appendMessage(type, content) {
+  function appendChatMessage(type, content) {
     const div = document.createElement("div");
     div.className = `msg msg-${type}`;
     if (type === "system") {
@@ -654,18 +699,18 @@
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // 8. 隨堂測驗與完成進度推進
+  // 7. 隨堂測驗 (3.1 Flash-Lite)
   async function handleGenerateQuiz() {
     const currentProj = state.appData.projects[state.appData.activeProjectId];
     const title = currentProj.plan[state.activeDayIndex];
 
     btnTriggerQuiz.disabled = true;
-    btnTriggerQuiz.textContent = "出題中...";
+    btnTriggerQuiz.textContent = "生成測驗中...";
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      const prompt = `針對日語文法主題「${title}」設計 2 題小測驗。
-嚴格返回符合以下結構的 JSON 陣列，解析請使用 Markdown 格式：
+      const prompt = `請針對日語文法「${title}」出 2 題小測驗，考驗接續變化與助詞用法。
+嚴格回傳符合以下結構的 JSON 陣列：
 [
   {
     "question": "題目描述",
@@ -676,7 +721,7 @@
 ]`;
 
       const res = await ai.models.generateContent({
-        model: MODEL_NAME,
+        model: CHAT_MODEL,
         contents: prompt,
         config: { responseMimeType: "application/json" }
       });
@@ -687,7 +732,6 @@
       // 標註當天已完成
       if (currentProj.history[state.activeDayIndex]) {
         currentProj.history[state.activeDayIndex].completed = true;
-        // 如果完成的是當前最新進度，將進度指針推進到下一天
         if (state.activeDayIndex === currentProj.currentDayIndex && currentProj.currentDayIndex + 1 < currentProj.plan.length) {
           currentProj.currentDayIndex += 1;
         }
@@ -699,12 +743,12 @@
       alert("測驗生成失敗：" + e.message);
     } finally {
       btnTriggerQuiz.disabled = false;
-      btnTriggerQuiz.textContent = "今日小測驗";
+      btnTriggerQuiz.textContent = "進行今日隨堂測驗";
     }
   }
 
   function renderQuizCards(list) {
-    quizContainer.innerHTML = "<h3 style='margin-top:20px;'>隨堂理解測驗</h3>";
+    quizContainer.innerHTML = "<h4 style='margin: 12px 0 6px;'>今日隨堂測驗</h4>";
 
     list.forEach((item, index) => {
       const card = document.createElement("div");
@@ -717,18 +761,20 @@
       item.options.forEach(opt => {
         const lbl = document.createElement("label");
         lbl.className = "option-label";
-        lbl.innerHTML = `<input type="radio" name="opt_${index}" value="${opt[0]}"> ${marked.parseInline(opt)}`;
+        lbl.innerHTML = `<input type="radio" name="quiz_opt_${index}" value="${opt[0]}"> ${marked.parseInline(opt)}`;
         card.appendChild(lbl);
       });
 
       const revealBtn = document.createElement("button");
       revealBtn.type = "button";
-      revealBtn.textContent = "查看詳細解答";
-      revealBtn.style.marginTop = "8px";
+      revealBtn.textContent = "查看解答";
+      revealBtn.style.marginTop = "6px";
+      revealBtn.style.fontSize = "12px";
+      revealBtn.style.padding = "4px 8px";
 
       const expBox = document.createElement("div");
       expBox.className = "explanation hidden";
-      expBox.innerHTML = `<strong>正確答案：${item.answer}</strong><div style="margin-top: 6px;">${marked.parse(item.explanation)}</div>`;
+      expBox.innerHTML = `<strong>正確答案：${item.answer}</strong><div style="margin-top: 4px;">${marked.parse(item.explanation)}</div>`;
 
       revealBtn.addEventListener("click", () => {
         expBox.classList.remove("hidden");
