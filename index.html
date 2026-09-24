@@ -334,7 +334,8 @@
       activeProjectId: null,
       settings: {
         lectureModel: DEFAULT_LECTURE_MODEL,
-        chatModel: DEFAULT_CHAT_MODEL
+        chatModel: DEFAULT_CHAT_MODEL,
+        detailLevel: 2 // 1: 簡答, 2: 適中, 3: 詳盡
       },
       projects: {}
     },
@@ -388,6 +389,8 @@
   const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
   const btnBackCards = document.getElementById("btn-back-cards");
   const quizContainer = document.getElementById("quiz-container");
+  const sliderDetailLevel = document.getElementById("slider-detail-level");
+  const badgeDetailLevel = document.getElementById("badge-detail-level");
 
   const modalConfirm = document.getElementById("modal-confirm");
   const confirmModalTitle = document.getElementById("confirm-modal-title");
@@ -439,6 +442,20 @@
   btnBackCards.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
+
+  const DETAIL_NAMES = { 1: "簡答", 2: "適中", 3: "詳盡" };
+
+  function updateDetailBadge(val) {
+    badgeDetailLevel.textContent = DETAIL_NAMES[val] || "適中";
+  }
+
+  sliderDetailLevel.addEventListener("input", (e) => {
+    const val = parseInt(e.target.value, 10);
+    updateDetailBadge(val);
+    if (!state.appData.settings) state.appData.settings = {};
+    state.appData.settings.detailLevel = val;
+    saveProgressToDrive();
+  });
 
   btnOpenSettings.addEventListener("click", () => {
     selectLectureModel.value = getActiveLectureModel();
@@ -560,7 +577,8 @@
         if (!state.appData.settings) {
           state.appData.settings = {
             lectureModel: DEFAULT_LECTURE_MODEL,
-            chatModel: DEFAULT_CHAT_MODEL
+            chatModel: DEFAULT_CHAT_MODEL,
+            detailLevel: 2
           };
         }
       } else {
@@ -569,7 +587,8 @@
           activeProjectId: null,
           settings: {
             lectureModel: DEFAULT_LECTURE_MODEL,
-            chatModel: DEFAULT_CHAT_MODEL
+            chatModel: DEFAULT_CHAT_MODEL,
+            detailLevel: 2
           },
           projects: {}
         };
@@ -593,6 +612,10 @@
 
       selectLectureModel.value = getActiveLectureModel();
       selectChatModel.value = getActiveChatModel();
+
+      const currentDetail = state.appData.settings?.detailLevel || 2;
+      sliderDetailLevel.value = currentDetail;
+      updateDetailBadge(currentDetail);
 
       if (state.appData.geminiKey) {
         state.geminiKey = state.appData.geminiKey;
@@ -844,6 +867,7 @@
     quizContainer.innerHTML = "";
 
     const currentProj = state.appData.projects[state.appData.activeProjectId];
+    const projectGoal = currentProj.goal || "日語文法學習";
     const title = currentProj.plan[dayIdx];
     studyDayTitle.textContent = title;
     lectureDayTag.textContent = `DAY ${dayIdx + 1}`;
@@ -859,11 +883,15 @@
     if (!cachedContent) {
       lectureContentBox.innerHTML = `<div style="text-align:center; padding: 40px; color: #64748b;">
         <p style="font-weight:600; font-size:16px;">正在透過 ${getModelLabel(currentLectureModel)} 生成深度專業講義...</p>
-        <p style="font-size:13px;">包含接續形態對照表、句型構造剖析與中日思維差異拆解，請稍候片刻。</p>
+        <p style="font-size:13px;">為專案【${projectGoal}】客製化接續形態對照表、句型構造剖析與實戰例句，請稍候片刻。</p>
       </div>`;
 
       const lecturePrompt = `你是一位精通比較語言學與日語教學的文法專家。
+學生目前參與的整體學習專案主題為：【${projectGoal}】。
 請針對今日文法核心主題「${title}」撰寫一份完整、嚴謹且深度充足的專業教學講義。
+
+【核心導向要求】：
+本篇講義的所有情境切入點、例句設計與語用解析，必須緊密圍繞專案大目標【${projectGoal}】（例如：若主題為「跟朋友對話/口語」，請側重常體、口語縮約、自然省略與情感助詞；若為「商務日語」，請側重敬語階層、委婉推託與正式職場語境；若為「JLPT N3」，請側重考點接續與相似句型辨析）。
 
 格式嚴格要求：
 1. 請一律使用乾淨清晰的標準 Markdown 格式。
@@ -871,6 +899,7 @@
 3. 嚴格涵蓋以下五大核心模組：
 
 # 【${title}】深度文法解析講義
+> 本單元專屬學習目標導向：【${projectGoal}】
 
 ## 一、 文法核心接續與詞性構造規則
 - 詳細拆解動詞（Ⅰ類/五段、Ⅱ類/一段、Ⅲ類/サ變與カ變）、名詞、い形容詞、な形容詞的接續形態。
@@ -884,14 +913,14 @@
 - 指出中文母語學習者最容易犯的「中式日語」思維錯誤或助詞混淆點。
 - 列舉 1~2 個極易混淆的相似文法（例如：に／で、は／が、授受動詞方向等）進行對比辨析。
 
-## 四、 實戰生活情境例句（附中日對照）
-請提供 4 個具備不同生活與商務情境的例句，每個例句請包含：
+## 四、 實戰情境例句（專屬符合【${projectGoal}】場景）
+請提供 4 個最貼合【${projectGoal}】特定情境的實用例句，每個例句請包含：
 1. **日語原文**（平假名/漢字標註）
 2. **直譯與意譯**（說明中文意思）
-3. **語境解析**（說明說話者的心態、語氣強弱或使用場合）
+3. **語境解析**（說明說話者的心態、語氣強弱、親疏關係或場合合理性）
 
 ## 五、 文法總結與快速記憶口訣
-- 用一句話或朗朗上口的口訣總結今天核心規則。`;
+- 用一句話或朗朗上口的口訣總結今天核心規則，幫助在【${projectGoal}】情境下直覺反射使用。`;
 
       try {
         const res = await ai.models.generateContent({
@@ -912,18 +941,19 @@
     }
 
     renderMarkdownContent(lectureContentBox, cachedContent);
-    appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側由 ${getModelLabel(currentChatModel)} 隨時提供解答。`);
+    appendChatMessage("system", `已載入【${title}】完整講義（針對「${projectGoal}」客製規劃）。左側為深度教材，右側由 ${getModelLabel(currentChatModel)} 隨時提供解答。`);
 
     state.chatInstance = ai.chats.create({
       model: currentChatModel,
       config: {
         systemInstruction: `你是親切的日語課堂助教。
+學生目前的學習專案為：【${projectGoal}】。
 學生正在閱讀單元「${title}」的詳細教材，教材內容如下：
 
 ${cachedContent}
 
-請根據上方教材內容與學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。若需呈現句型骨架，請使用方括號或行內代碼表示，避免混雜繁瑣的 LaTeX 控制字元。
-【重要要求】：請直接針對學生的問題給予解答，絕對不要進行自我介紹，也不要說「我是你的日語助教」、「我來為你解答」等冗餘的開場白。`
+請根據專案目標【${projectGoal}】與上方教材內容，針對學生的具體疑問，用清晰、親切的繁體中文進行解答。說明句型時請善用 Markdown 格式標示假名與動詞變化。若需呈現句型骨架，請使用方括號或行內代碼表示，避免混雜繁瑣的 LaTeX 控制字元。
+【重要要求】：請直接針對學生的問題給予解答，絕對不要進行自我介紹，也不要說「我是你的日語助教」、「我來為你解答」等冗餘的開場白。回答情境應符合【${projectGoal}】的使用風格。`
       }
     });
   }
@@ -943,8 +973,18 @@ ${cachedContent}
     chatBox.appendChild(typingDiv);
     chatBox.scrollTop = chatBox.scrollHeight;
 
+    const detailLevel = state.appData.settings?.detailLevel || 2;
+    let detailConstraint = "";
+    if (detailLevel === 1) {
+      detailConstraint = "\n\n【回答風格限制：簡答模式】請用最精簡扼要、直截了當的方式回答（1~2 句話直擊核心，不需任何冗長鋪陳與額外展開）。";
+    } else if (detailLevel === 3) {
+      detailConstraint = "\n\n【回答風格限制：詳盡模式】請給予極為深入且完整的解答，剖析語義語感細微差異、助詞作用、文法接續與常見誤區，並附上多個具體生活例句。";
+    } else {
+      detailConstraint = "\n\n【回答風格限制：適中模式】請以條理清晰、重點突出的方式回答，並附帶關鍵說明與必要的 1 個例句。";
+    }
+
     try {
-      const res = await state.chatInstance.sendMessage({ message: text });
+      const res = await state.chatInstance.sendMessage({ message: text + detailConstraint });
       document.getElementById(typingId)?.remove();
       appendChatMessage("bot", res.text);
     } catch (err) {
@@ -967,6 +1007,7 @@ ${cachedContent}
 
   async function handleGenerateQuiz() {
     const currentProj = state.appData.projects[state.appData.activeProjectId];
+    const projectGoal = currentProj.goal || "日語文法學習";
     const title = currentProj.plan[state.activeDayIndex];
     const currentChatModel = getActiveChatModel();
 
@@ -975,7 +1016,8 @@ ${cachedContent}
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-      const prompt = `請針對日語文法「${title}」出 2 題小測驗，考驗接續變化與助詞用法。
+      const prompt = `請針對專案目標【${projectGoal}】中的日語文法單元「${title}」出 2 題小測驗。
+題目必須契合【${projectGoal}】的情境與語用風格（例如口語朋友對話、商務書信、檢定精準接續等），考驗接續變化與助詞用法。
 嚴格回傳符合以下結構的 JSON 陣列：
 [
   {
