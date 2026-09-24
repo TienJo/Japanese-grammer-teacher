@@ -395,6 +395,9 @@
   const btnSendMessage = document.getElementById("btn-send-message");
   const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
   const btnBackCards = document.getElementById("btn-back-cards");
+  const btnToggleSidebar = document.getElementById("btn-toggle-sidebar");
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+  const mainSidebar = document.getElementById("main-sidebar");
   const quizContainer = document.getElementById("quiz-container");
   const sliderDetailLevel = document.getElementById("slider-detail-level");
   const badgeDetailLevel = document.getElementById("badge-detail-level");
@@ -449,6 +452,20 @@
   btnBackCards.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
+
+  if (btnToggleSidebar) {
+    btnToggleSidebar.addEventListener("click", () => {
+      const isOpen = mainSidebar.classList.toggle("drawer-open");
+      sidebarOverlay.classList.toggle("hidden", !isOpen);
+    });
+  }
+
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener("click", () => {
+      mainSidebar.classList.remove("drawer-open");
+      sidebarOverlay.classList.add("hidden");
+    });
+  }
 
   const DETAIL_NAMES = { 1: "簡答", 2: "適中", 3: "詳盡" };
 
@@ -783,6 +800,8 @@
       li.addEventListener("click", () => {
         state.appData.activeProjectId = proj.id;
         saveProgressToDrive();
+        mainSidebar.classList.remove("drawer-open");
+        sidebarOverlay.classList.add("hidden");
         renderSidebar();
         showCardsDashboard();
       });
@@ -793,6 +812,9 @@
   }
 
   function showCardsDashboard() {
+    appLayout.classList.remove("in-study");
+    mainSidebar.classList.remove("drawer-open");
+    sidebarOverlay.classList.add("hidden");
     viewStudy.classList.add("hidden");
     viewEmptyCreate.classList.add("hidden");
     viewDashboard.classList.remove("hidden");
@@ -872,6 +894,9 @@
 
   async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
+    appLayout.classList.add("in-study");
+    mainSidebar.classList.remove("drawer-open");
+    sidebarOverlay.classList.add("hidden");
     viewDashboard.classList.add("hidden");
     viewEmptyCreate.classList.add("hidden");
     viewStudy.classList.remove("hidden");
