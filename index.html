@@ -17,7 +17,6 @@
     #app-layout { display: flex; flex: 1; height: calc(100vh - 57px); overflow: hidden; }
     .hidden { display: none !important; }
 
-    /* 通用按鈕 */
     button { background: #2563eb; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #94a3b8; cursor: not-allowed; }
@@ -39,9 +38,12 @@
     .btn-del-project { background: transparent; color: #94a3b8; padding: 4px 6px; font-size: 16px; border-radius: 4px; }
     .btn-del-project:hover { background: #fee2e2; color: #ef4444; }
 
-    /* 右側主工作區 */
-    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
     .content-container { max-width: 1080px; width: 100%; margin: 0 auto; padding: 24px; }
+
+    /* 無專案時的整頁新建專案畫面 */
+    .empty-state-card { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .empty-state-card h2 { margin-top: 0; color: #0f172a; font-size: 20px; }
 
     /* 日卡 (Day Cards) 網格 */
     .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -64,15 +66,14 @@
     .day-card.locked .card-title { color: #64748b; }
     .day-card.locked button { background: #94a3b8; }
 
-    /* 寬敞學習介面：雙欄設計 */
     .study-layout { display: flex; height: 100%; width: 100%; gap: 20px; padding: 20px; overflow: hidden; }
     
-    /* 左半部：深度講義區塊 (60%) */
+    /* 左欄：3.7 Flash 深度教材閱讀專區 */
     .lecture-panel { flex: 6; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .lecture-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
     .lecture-content { flex: 1; overflow-y: auto; padding: 24px; line-height: 1.75; font-size: 15px; color: #334155; }
     
-    /* 右半部：對話問答與測驗區塊 (40%) */
+    /* 右欄：3.1 Flash-Lite 即時助教問答與隨堂測驗 */
     .interactive-panel { flex: 4; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .interactive-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 15px; }
     .chat-scroll-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
@@ -84,7 +85,7 @@
     .msg-user { background: #2563eb; color: #ffffff; align-self: flex-end; }
     .msg-system { background: #fef3c7; color: #92400e; align-self: center; font-size: 12px; padding: 6px 12px; border-radius: 9999px; }
 
-    /* Markdown 排版美化 (包含表格、粗體、清單) */
+    /* Markdown 排版美化 */
     .lecture-content h1, .lecture-content h2, .lecture-content h3 { color: #0f172a; margin-top: 24px; margin-bottom: 10px; }
     .lecture-content h2 { border-bottom: 2px solid #f1f5f9; padding-bottom: 6px; }
     .lecture-content table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
@@ -106,12 +107,12 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   </style>
 
+  <!-- Google Identity Services & Marked -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
-  <!-- 頂部列 -->
   <header>
     <h1>日語文法學習工作台</h1>
     <div id="header-right" class="hidden">
@@ -138,7 +139,6 @@
     <button id="btn-login" style="width: 100%; padding: 12px; font-size: 15px;">登入 Google 帳號</button>
   </div>
 
-  <!-- 主工作台：雙欄結構 -->
   <div id="app-layout" class="hidden">
     <!-- 左側專案清單 -->
     <aside id="main-sidebar">
@@ -151,8 +151,26 @@
 
     <!-- 右側主要操作區 -->
     <main>
+      <!-- 視圖 0: 當沒有任何專案時，直接顯示整頁新建表單 -->
+      <section id="view-empty-create" class="content-container hidden">
+        <div class="empty-state-card">
+          <h2>建立第一個日語學習計畫</h2>
+          <p style="font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 20px;">
+            目前尚未建立任何專案。請設定目標與規劃天數，Gemini 3.7 Flash 將為你客製化完整的文法學習日程表。
+          </p>
+
+          <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">學習目標 / 主題：</label>
+          <input type="text" id="input-empty-goal" placeholder="例如：JLPT N3 核心文法衝刺、日常旅遊會話" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; margin-bottom: 16px;">
+
+          <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px;">規劃天數：</label>
+          <input type="number" id="input-empty-days" value="14" min="1" max="90" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; margin-bottom: 20px;">
+
+          <button id="btn-empty-create" style="width: 100%; padding: 12px; font-size: 15px;">開始規劃大綱並進入學習</button>
+        </div>
+      </section>
+
       <!-- 視圖 A: 專案日卡看板 -->
-      <section id="view-dashboard" class="content-container">
+      <section id="view-dashboard" class="content-container hidden">
         <div class="dashboard-header">
           <div>
             <h2 id="view-project-title">載入中...</h2>
@@ -195,12 +213,11 @@
     </main>
   </div>
 
-  <!-- 彈跳視窗：輸入 API Key -->
   <div id="modal-key-setup" class="modal-overlay hidden">
     <div class="modal-box">
       <h3>設定 Gemini API Key</h3>
       <p style="font-size: 13px; color: #64748b; line-height: 1.4;">
-        初次使用請輸入 Gemini API Key。金鑰將安全儲存於你個人的 Google Drive 中，往後打開自動連線。
+        初次使用請輸入 Gemini API Key。金鑰將安全儲存於個人 Google Drive 中，往後打開自動連線。
       </p>
       <input type="password" id="input-gemini-key" placeholder="AIzaSy..." style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 12px 0;">
       <div class="modal-actions">
@@ -209,7 +226,6 @@
     </div>
   </div>
 
-  <!-- 彈跳視窗：新建計畫專案 -->
   <div id="modal-new-project" class="modal-overlay hidden">
     <div class="modal-box">
       <h3>新增學習計畫專案</h3>
@@ -250,7 +266,6 @@
     chatInstance: null
   };
 
-  // DOM 快取
   const sectionAuth = document.getElementById("section-auth");
   const appLayout = document.getElementById("app-layout");
   const headerRight = document.getElementById("header-right");
@@ -270,6 +285,11 @@
   const inputNewGoal = document.getElementById("input-new-goal");
   const inputNewDays = document.getElementById("input-new-days");
 
+  const viewEmptyCreate = document.getElementById("view-empty-create");
+  const inputEmptyGoal = document.getElementById("input-empty-goal");
+  const inputEmptyDays = document.getElementById("input-empty-days");
+  const btnEmptyCreate = document.getElementById("btn-empty-create");
+
   const projectListElem = document.getElementById("project-list");
   const viewDashboard = document.getElementById("view-dashboard");
   const viewStudy = document.getElementById("view-study");
@@ -287,7 +307,6 @@
   const btnBackCards = document.getElementById("btn-back-cards");
   const quizContainer = document.getElementById("quiz-container");
 
-  // 事件綁定
   chkCustomClientId.addEventListener("change", (e) => {
     boxCustomClientId.classList.toggle("hidden", !e.target.checked);
   });
@@ -295,7 +314,8 @@
   btnSaveKey.addEventListener("click", handleSaveApiKey);
   btnOpenNewProject.addEventListener("click", () => modalNewProject.classList.remove("hidden"));
   btnCancelNewProject.addEventListener("click", () => modalNewProject.classList.add("hidden"));
-  btnConfirmCreateProject.addEventListener("click", handleCreateNewProject);
+  btnConfirmCreateProject.addEventListener("click", () => executeCreateProject(inputNewGoal.value, inputNewDays.value, btnConfirmCreateProject, modalNewProject));
+  btnEmptyCreate.addEventListener("click", () => executeCreateProject(inputEmptyGoal.value, inputEmptyDays.value, btnEmptyCreate, null));
   btnBackCards.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
@@ -304,7 +324,6 @@
     if (e.key === "Enter") handleSendMessage();
   });
 
-  // 1. Google 授權
   function handleGoogleAuth() {
     const clientId = inputClientId.value.trim() || DEFAULT_CLIENT_ID;
 
@@ -334,7 +353,6 @@
     client.requestAccessToken();
   }
 
-  // 2. Google Drive 資料同步
   async function syncDataFromDrive() {
     try {
       const q = encodeURIComponent(`name = '${DRIVE_FILE_NAME}' and trashed = false`);
@@ -414,9 +432,16 @@
 
   function initAppFlow() {
     const projectKeys = Object.keys(state.appData.projects || {});
+    renderSidebar();
+
     if (projectKeys.length === 0) {
-      modalNewProject.classList.remove("hidden");
+      // 若無剩餘任何專案，隱藏儀表板與學習頁面，直接顯示整頁新建表單
+      viewStudy.classList.add("hidden");
+      viewDashboard.classList.add("hidden");
+      modalNewProject.classList.add("hidden");
+      viewEmptyCreate.classList.remove("hidden");
     } else {
+      viewEmptyCreate.classList.add("hidden");
       if (!state.appData.activeProjectId || !state.appData.projects[state.appData.activeProjectId]) {
         state.appData.activeProjectId = projectKeys[0];
       }
@@ -425,18 +450,18 @@
     }
   }
 
-  // 3. 專案建立與刪除
-  async function handleCreateNewProject() {
-    const goal = inputNewGoal.value.trim();
-    const days = inputNewDays.value;
+  async function executeCreateProject(goalText, daysValue, triggerBtn, modalToHide) {
+    const goal = (goalText || "").trim();
+    const days = daysValue;
 
     if (!goal) {
       alert("請填寫專案目標");
       return;
     }
 
-    btnConfirmCreateProject.disabled = true;
-    btnConfirmCreateProject.textContent = "規劃大綱中 (3.7 Flash)...";
+    const originalText = triggerBtn.textContent;
+    triggerBtn.disabled = true;
+    triggerBtn.textContent = "規劃大綱中 (3.7 Flash)...";
 
     try {
       const ai = new GoogleGenAI({ apiKey: state.geminiKey });
@@ -466,18 +491,21 @@
       state.appData.activeProjectId = newId;
       await saveProgressToDrive();
 
-      modalNewProject.classList.add("hidden");
+      if (modalToHide) {
+        modalToHide.classList.add("hidden");
+      }
       inputNewGoal.value = "";
-      btnConfirmCreateProject.disabled = false;
-      btnConfirmCreateProject.textContent = "開始規劃大綱";
+      inputEmptyGoal.value = "";
 
-      renderSidebar();
-      showCardsDashboard();
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = originalText;
+
+      initAppFlow();
     } catch (e) {
       console.error(e);
       alert("大綱生成失敗：" + e.message);
-      btnConfirmCreateProject.disabled = false;
-      btnConfirmCreateProject.textContent = "開始規劃大綱";
+      triggerBtn.disabled = false;
+      triggerBtn.textContent = originalText;
     }
   }
 
@@ -489,6 +517,7 @@
       const remaining = Object.keys(state.appData.projects);
       state.appData.activeProjectId = remaining.length > 0 ? remaining[0] : null;
       await saveProgressToDrive();
+      // 呼叫 initAppFlow 自動檢查剩餘專案；若已無專案則跳轉至空狀態新建頁面
       initAppFlow();
     }
   }
@@ -523,13 +552,16 @@
     });
   }
 
-  // 4. 日卡看板
   function showCardsDashboard() {
     viewStudy.classList.add("hidden");
+    viewEmptyCreate.classList.add("hidden");
     viewDashboard.classList.remove("hidden");
 
     const currentProj = state.appData.projects[state.appData.activeProjectId];
-    if (!currentProj) return;
+    if (!currentProj) {
+      initAppFlow();
+      return;
+    }
 
     viewProjectTitle.textContent = currentProj.goal;
     dayCardsGrid.innerHTML = "";
@@ -579,10 +611,10 @@
     viewProjectProgress.textContent = `完成度：${completedCount} / ${currentProj.plan.length} 天 (${Math.round((completedCount/currentProj.plan.length)*100)}%)`;
   }
 
-  // 5. 進入雙欄學習介面（3.7 Flash 深度教材 + 3.1 Flash-Lite 助教）
   async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
     viewDashboard.classList.add("hidden");
+    viewEmptyCreate.classList.add("hidden");
     viewStudy.classList.remove("hidden");
 
     chatBox.innerHTML = "";
@@ -604,7 +636,6 @@
         <p style="font-size:13px;">包含接續形態對照表、句型構造剖析與中日思維差異拆解，請稍候片刻。</p>
       </div>`;
 
-      // 深度長篇講義 Prompt
       const lecturePrompt = `你是一位精通比較語言學與日語教學的文法專家。
 請針對今日文法核心主題「${title}」撰寫一份完整、嚴謹且深度充足的專業教學講義。
 
@@ -651,13 +682,10 @@
       }
     }
 
-    // 渲染講義到左欄
     lectureContentBox.innerHTML = marked.parse(cachedContent);
-
-    // 初始歡迎訊息至右側對話框
     appendChatMessage("system", `已載入【${title}】完整講義。左側為深度教材，右側隨時提供即時提問解答。`);
 
-    // 初始化 3.1 Flash-Lite 對話 Session，注入講義作為背景資料
+    // 啟動 Gemini 3.1 Flash-Lite 作為即時互動助教
     state.chatInstance = ai.chats.create({
       model: CHAT_MODEL,
       config: {
@@ -671,7 +699,6 @@ ${cachedContent}
     });
   }
 
-  // 6. 右側即時提問 (3.1 Flash-Lite)
   async function handleSendMessage() {
     const text = inputMessage.value.trim();
     if (!text || !state.chatInstance) return;
@@ -699,7 +726,6 @@ ${cachedContent}
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
-  // 7. 隨堂測驗 (3.1 Flash-Lite)
   async function handleGenerateQuiz() {
     const currentProj = state.appData.projects[state.appData.activeProjectId];
     const title = currentProj.plan[state.activeDayIndex];
@@ -729,7 +755,7 @@ ${cachedContent}
       const list = JSON.parse(res.text.trim());
       renderQuizCards(list);
 
-      // 標註當天已完成
+      // 標記完成狀態
       if (currentProj.history[state.activeDayIndex]) {
         currentProj.history[state.activeDayIndex].completed = true;
         if (state.activeDayIndex === currentProj.currentDayIndex && currentProj.currentDayIndex + 1 < currentProj.plan.length) {
