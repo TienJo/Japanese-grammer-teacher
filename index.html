@@ -213,7 +213,14 @@
 
         <!-- 右欄：即時助教問答與隨堂測驗 -->
         <div class="interactive-panel">
-          <div class="interactive-header">AI 助教對話與隨堂測驗</div>
+          <div class="interactive-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>AI 助教對話與隨堂測驗</span>
+            <div style="display: flex; align-items: center; gap: 6px; font-weight: normal; font-size: 12px; color: #64748b;">
+              <span>回答程度:</span>
+              <input type="range" id="slider-detail-level" min="1" max="3" step="1" value="2" style="width: 70px; cursor: pointer;">
+              <span id="badge-detail-level" style="font-weight: 600; color: #2563eb; min-width: 28px;">適中</span>
+            </div>
+          </div>
           <div id="chat-box" class="chat-scroll-area"></div>
           <div class="chat-input-bar">
             <div style="display: flex; gap: 6px;">
@@ -446,16 +453,20 @@
   const DETAIL_NAMES = { 1: "簡答", 2: "適中", 3: "詳盡" };
 
   function updateDetailBadge(val) {
-    badgeDetailLevel.textContent = DETAIL_NAMES[val] || "適中";
+    if (badgeDetailLevel) {
+      badgeDetailLevel.textContent = DETAIL_NAMES[val] || "適中";
+    }
   }
 
-  sliderDetailLevel.addEventListener("input", (e) => {
-    const val = parseInt(e.target.value, 10);
-    updateDetailBadge(val);
-    if (!state.appData.settings) state.appData.settings = {};
-    state.appData.settings.detailLevel = val;
-    saveProgressToDrive();
-  });
+  if (sliderDetailLevel) {
+    sliderDetailLevel.addEventListener("input", (e) => {
+      const val = parseInt(e.target.value, 10);
+      updateDetailBadge(val);
+      if (!state.appData.settings) state.appData.settings = {};
+      state.appData.settings.detailLevel = val;
+      saveProgressToDrive();
+    });
+  }
 
   btnOpenSettings.addEventListener("click", () => {
     selectLectureModel.value = getActiveLectureModel();
@@ -614,7 +625,9 @@
       selectChatModel.value = getActiveChatModel();
 
       const currentDetail = state.appData.settings?.detailLevel || 2;
-      sliderDetailLevel.value = currentDetail;
+      if (sliderDetailLevel) {
+        sliderDetailLevel.value = currentDetail;
+      }
       updateDetailBadge(currentDetail);
 
       if (state.appData.geminiKey) {
