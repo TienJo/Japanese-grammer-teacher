@@ -276,7 +276,7 @@
           </div>
         </div>
 
-        <!-- 右欄：即時助教問答與隨堂測驗（全部整合於對話流中） -->
+        <!-- 右欄：即時助教問答與隨堂測驗（全部整合於對話流中，只允許點擊按鈕送出） -->
         <div class="interactive-panel">
           <div class="interactive-header" style="display: flex; justify-content: space-between; align-items: center;">
             <span>AI 助教對話與隨堂測驗 (Gemini 3 Flash 批改)</span>
@@ -289,7 +289,8 @@
           <div id="chat-box" class="chat-scroll-area"></div>
           <div class="chat-input-bar">
             <div style="display: flex; gap: 6px; align-items: flex-end;">
-              <textarea id="input-message" rows="1" placeholder="發問或作答... (Enter 發送，Shift+Enter 換行)" style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"></textarea>
+              <!-- 提示只能按按鈕送出，防止誤觸 -->
+              <textarea id="input-message" rows="1" placeholder="發問或作答... (Enter 鍵正常換行，請點擊右側按鈕發送)" style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"></textarea>
               <button id="btn-send-message" style="height: 38px;">發送</button>
             </div>
             <button id="btn-trigger-quiz" class="btn-green" style="width: 100%;">進行今日 10+1 題隨堂測驗 (Gemini 3 Flash)</button>
@@ -517,7 +518,10 @@
   btnEmptyCreate.addEventListener("click", () => executeCreateProject(inputEmptyGoal.value, inputEmptyDays.value, btnEmptyCreate, null));
   
   btnBackCardsLeft.addEventListener("click", showCardsDashboard);
+
+  // 重要設定：點擊發送按鈕才會送出，Enter 鍵一律維持預設換行行為，防止誤觸
   btnSendMessage.addEventListener("click", handleSendMessage);
+
   btnTriggerQuiz.addEventListener("click", handleStartInChatQuiz);
 
   btnToggleSidebar.addEventListener("click", () => {
@@ -571,13 +575,6 @@
     btnSaveSettings.textContent = "儲存並套用";
     modalSettings.classList.add("hidden");
     showToast("模型設定已更新並同步至雲端", "success");
-  });
-
-  inputMessage.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
   });
 
   function getActiveLectureModel() {
@@ -1176,15 +1173,15 @@ ${cachedContent}
 請針對今日單元「${title}」（學習主題：${projectGoal}）出題。
 
 題型配置要求（共 11 題）：
-- 題 1 ~ 题 3：【文法單選題】（4 選 1，考驗核心動詞變化與句型接續）。
-- 題 4 ~ 题 6：【助詞與形態填空題】（例句中以 ( ) 挖空，測驗助詞搭配或動詞適當形態轉換）。
-- 題 7 ~ 题 8：【語序排列重組題】（提供 4 個語塊，請學生排出正確順序，例如：①～④）。
-- 題 9 ~ 题 10：【實戰情境病句改錯 / 短句中翻日】（緊扣【${projectGoal}】的生活/職場情境）。
+- 題 1 ~ 題 3：【文法單選題】（4 選 1，考驗核心動詞變化與句型接續）。
+- 題 4 ~ 題 6：【助詞與形態填空題】（例句中以 ( ) 挖空，測驗助詞搭配或動詞適當形態轉換）。
+- 題 7 ~ 題 8：【語序排列重組題】（提供 4 個語塊，請學生排出正確順序，例如：①～④）。
+- 題 9 ~ 題 10：【實戰情境病句改錯 / 短句中翻日】（緊扣【${projectGoal}】的生活/職場情境）。
 - 題 11：【🔥 Bonus 困難挑戰題】（設計深度語義辨析、極易混淆的相似語感陷阱，或進階敬語/使役被動轉換，標註為 Bonus 題）。
 
 排版要求：
 1. 嚴格按照 1. 到 10. 以及 Bonus. 依序列出題目，題目敘述清晰。
-2. 題目結尾請親切提示：「我已為您在下方輸入框預填好題號範本，請直接在對應編號後填寫答案發送，我將為您批改並提供完整詳解！」。
+2. 題目結尾請親切提示：「我已為您在下方輸入框預填好題號範本，請直接在對應編號後填寫答案，並點擊右側【發送】按鈕送出（Enter 鍵可正常換行），我將為您批改並提供完整詳解！」。
 3. 嚴禁在這次回覆中公佈答案或解析！待學生送出答案後再進行全面批改。`;
 
     try {
