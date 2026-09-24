@@ -13,11 +13,18 @@
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; color: #1e293b; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; }
-    header h1 { margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
+    
+    /* 頂部導航列 */
+    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 30; }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    header h1 { margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px; font-weight: 700; }
     .status-badge { font-size: 12px; background: #ecfdf5; color: #059669; padding: 4px 8px; border-radius: 9999px; font-weight: 500; }
 
-    #app-layout { display: flex; flex: 1; height: calc(100vh - 57px); overflow: hidden; }
+    /* 漢堡選單按鈕 */
+    .btn-hamburger { background: transparent; border: 1px solid #cbd5e1; color: #334155; padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; transition: background 0.15s, color 0.15s; }
+    .btn-hamburger:hover { background: #f1f5f9; color: #0f172a; }
+
+    #app-layout { display: flex; flex: 1; height: calc(100vh - 53px); overflow: hidden; position: relative; }
     .hidden { display: none !important; }
 
     button { background: #2563eb; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; }
@@ -30,8 +37,25 @@
     .btn-danger { background: #ef4444; }
     .btn-danger:hover { background: #dc2626; }
 
-    aside { width: 260px; min-width: 260px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; }
-    .sidebar-header { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+    /* 側邊專案欄 (平鋪及抽屜模式支援) */
+    aside { width: 260px; min-width: 260px; background: #ffffff; border-right: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s ease; z-index: 40; height: 100%; }
+    
+    /* 課程學習模式下的側邊欄 (預設隱藏並作為抽屜) */
+    body.in-study-mode aside {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      transform: translateX(-100%);
+      box-shadow: 4px 0 16px rgba(0, 0, 0, 0.15);
+    }
+    body.in-study-mode aside.drawer-open {
+      transform: translateX(0);
+    }
+
+    .sidebar-overlay { position: absolute; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 35; backdrop-filter: blur(2px); transition: opacity 0.2s ease; }
+
+    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header h2 { margin: 0; font-size: 15px; }
     .project-list { flex: 1; overflow-y: auto; list-style: none; margin: 0; padding: 8px; }
     .project-item { padding: 12px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s; border: 1px solid transparent; }
@@ -42,8 +66,8 @@
     .btn-del-project { background: transparent; color: #94a3b8; padding: 4px 6px; font-size: 16px; border-radius: 4px; }
     .btn-del-project:hover { background: #fee2e2; color: #ef4444; }
 
-    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
-    .content-container { max-width: 1080px; width: 100%; margin: 0 auto; padding: 24px; }
+    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; width: 100%; }
+    .content-container { max-width: 1100px; width: 100%; margin: 0 auto; padding: 24px; }
 
     .empty-state-card { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 32px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .empty-state-card h2 { margin-top: 0; color: #0f172a; font-size: 20px; }
@@ -67,13 +91,39 @@
     .day-card.locked .card-title { color: #64748b; }
     .day-card.locked button { background: #94a3b8; }
 
-    .study-layout { display: flex; height: 100%; width: 100%; gap: 20px; padding: 20px; overflow: hidden; }
+    /* 雙欄寬敞學習介面 */
+    .study-layout { display: flex; height: 100%; width: 100%; gap: 16px; padding: 16px; overflow: hidden; }
     .lecture-panel { flex: 6; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .lecture-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #ffffff; }
+    
+    /* 課程頂部：返回鍵置於左側標題旁 */
+    .lecture-header { padding: 12px 18px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: flex-start; gap: 12px; background: #ffffff; }
+    
+    .btn-back-left {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .btn-back-left:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+      transform: translateX(-2px);
+    }
+
+    .lecture-title-group { display: flex; flex-direction: column; overflow: hidden; }
     .lecture-content { flex: 1; overflow-y: auto; padding: 24px; line-height: 1.75; font-size: 15px; color: #334155; }
     
     .interactive-panel { flex: 4; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .interactive-header { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 15px; }
+    .interactive-header { padding: 14px 18px; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 14px; }
     .chat-scroll-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; }
     .chat-input-bar { padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #ffffff; display: flex; flex-direction: column; gap: 8px; }
 
@@ -95,10 +145,10 @@
     .option-label:hover { background: #f1f5f9; }
     .explanation { margin-top: 8px; padding: 8px 10px; background: #f8fafc; border-left: 3px solid #2563eb; font-size: 12.5px; }
 
-    .btn-icon { background: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 15px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .btn-icon { background: transparent; color: #475569; border: 1px solid #cbd5e1; padding: 6px 10px; font-size: 14px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
     .btn-icon:hover { background: #f1f5f9; color: #0f172a; }
 
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 60; }
     .modal-box { background: white; padding: 24px; border-radius: 12px; width: 440px; max-width: 90%; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
     .modal-box h3 { margin-top: 0; margin-bottom: 12px; }
     .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
@@ -123,7 +173,13 @@
 <body>
 
   <header>
-    <h1>日語文法學習工作台</h1>
+    <div class="header-left">
+      <!-- 漢堡三條槓按鈕 (在進入課程模式時可點選喚出抽屜) -->
+      <button id="btn-toggle-drawer" class="btn-hamburger hidden" title="切換專案清單">
+        ☰
+      </button>
+      <h1>日語文法學習工作台</h1>
+    </div>
     <div id="header-right" class="hidden" style="display: flex; align-items: center; gap: 14px;">
       <span class="status-badge" id="cloud-status">Google Drive 已連線</span>
       <button id="btn-open-settings-modal" class="btn-icon" title="模型偏好設定">⚙️ 設定</button>
@@ -155,7 +211,10 @@
   </div>
 
   <div id="app-layout" class="hidden">
-    <!-- 左側專案清單 -->
+    <!-- 抽屜模式下的半透明背景遮罩 -->
+    <div id="sidebar-overlay" class="sidebar-overlay hidden"></div>
+
+    <!-- 左側專案清單 (支援平鋪與抽屜模式) -->
     <aside id="main-sidebar">
       <div class="sidebar-header">
         <h2>學習專案</h2>
@@ -165,7 +224,7 @@
     </aside>
 
     <!-- 右側主要操作區 -->
-    <main>
+    <main id="main-content-area">
       <!-- 視圖 0: 當沒有任何專案時，直接顯示整頁新建表單 -->
       <section id="view-empty-create" class="content-container hidden">
         <div class="empty-state-card">
@@ -195,16 +254,19 @@
         <div id="day-cards-grid" class="cards-grid"></div>
       </section>
 
-      <!-- 視圖 B: 雙欄寬敞學習介面 -->
+      <!-- 視圖 B: 雙欄寬敞學習介面 (標題左側配備精簡返回按鈕) -->
       <section id="view-study" class="study-layout hidden">
         <!-- 左欄：深度教材閱讀專區 -->
         <div class="lecture-panel">
           <div class="lecture-header">
-            <div>
-              <span id="lecture-day-tag" style="font-size: 12px; font-weight: 700; color: #2563eb;">DAY 1</span>
-              <h2 id="study-day-title" style="margin: 2px 0 0; font-size: 18px; color: #0f172a;">教材標題</h2>
+            <!-- 移至左側標題前的精簡返回按鈕 -->
+            <button id="btn-back-cards-left" class="btn-back-left" title="返回日程卡片清單">
+              ← 返回日程
+            </button>
+            <div class="lecture-title-group">
+              <span id="lecture-day-tag" style="font-size: 11px; font-weight: 700; color: #2563eb;">DAY 1</span>
+              <h2 id="study-day-title" style="margin: 0; font-size: 17px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">教材標題</h2>
             </div>
-            <button id="btn-back-cards" class="btn-gray">返回日程清單</button>
           </div>
           <div id="lecture-content-box" class="lecture-content">
             <p style="color: #94a3b8;">正在準備教材...</p>
@@ -353,6 +415,10 @@
   const sectionAuth = document.getElementById("section-auth");
   const appLayout = document.getElementById("app-layout");
   const headerRight = document.getElementById("header-right");
+  const btnToggleDrawer = document.getElementById("btn-toggle-drawer");
+  const mainSidebar = document.getElementById("main-sidebar");
+  const sidebarOverlay = document.getElementById("sidebar-overlay");
+
   const btnOpenSettings = document.getElementById("btn-open-settings-modal");
   const modalSettings = document.getElementById("modal-settings");
   const btnCloseSettingsX = document.getElementById("btn-close-settings-x");
@@ -394,7 +460,7 @@
   const inputMessage = document.getElementById("input-message");
   const btnSendMessage = document.getElementById("btn-send-message");
   const btnTriggerQuiz = document.getElementById("btn-trigger-quiz");
-  const btnBackCards = document.getElementById("btn-back-cards");
+  const btnBackCardsLeft = document.getElementById("btn-back-cards-left");
   const quizContainer = document.getElementById("quiz-container");
   const sliderDetailLevel = document.getElementById("slider-detail-level");
   const badgeDetailLevel = document.getElementById("badge-detail-level");
@@ -437,6 +503,26 @@
     }
   });
 
+  function openDrawer() {
+    mainSidebar.classList.add("drawer-open");
+    sidebarOverlay.classList.remove("hidden");
+  }
+
+  function closeDrawer() {
+    mainSidebar.classList.remove("drawer-open");
+    sidebarOverlay.classList.add("hidden");
+  }
+
+  btnToggleDrawer.addEventListener("click", () => {
+    if (mainSidebar.classList.contains("drawer-open")) {
+      closeDrawer();
+    } else {
+      openDrawer();
+    }
+  });
+
+  sidebarOverlay.addEventListener("click", closeDrawer);
+
   chkCustomClientId.addEventListener("change", (e) => {
     boxCustomClientId.classList.toggle("hidden", !e.target.checked);
   });
@@ -446,7 +532,7 @@
   btnCancelNewProject.addEventListener("click", () => modalNewProject.classList.add("hidden"));
   btnConfirmCreateProject.addEventListener("click", () => executeCreateProject(inputNewGoal.value, inputNewDays.value, btnConfirmCreateProject, modalNewProject));
   btnEmptyCreate.addEventListener("click", () => executeCreateProject(inputEmptyGoal.value, inputEmptyDays.value, btnEmptyCreate, null));
-  btnBackCards.addEventListener("click", showCardsDashboard);
+  btnBackCardsLeft.addEventListener("click", showCardsDashboard);
   btnSendMessage.addEventListener("click", handleSendMessage);
   btnTriggerQuiz.addEventListener("click", handleGenerateQuiz);
 
@@ -528,7 +614,6 @@
     btnLogin.disabled = true;
     btnLogin.textContent = "驗證中...";
 
-    // 逾時防禦機制：若 10 秒內因彈跳封鎖或來源不符未響應，自動解除按鈕禁用
     const authTimeout = setTimeout(() => {
       if (btnLogin.disabled) {
         btnLogin.disabled = false;
@@ -675,6 +760,9 @@
     renderSidebar();
 
     if (projectKeys.length === 0) {
+      document.body.classList.remove("in-study-mode");
+      btnToggleDrawer.classList.add("hidden");
+      closeDrawer();
       viewStudy.classList.add("hidden");
       viewDashboard.classList.add("hidden");
       modalNewProject.classList.add("hidden");
@@ -784,6 +872,7 @@
         state.appData.activeProjectId = proj.id;
         saveProgressToDrive();
         renderSidebar();
+        closeDrawer();
         showCardsDashboard();
       });
 
@@ -793,6 +882,11 @@
   }
 
   function showCardsDashboard() {
+    // 退出學習模式：恢復平鋪側邊欄，隱藏漢堡按鈕與遮罩
+    document.body.classList.remove("in-study-mode");
+    btnToggleDrawer.classList.add("hidden");
+    closeDrawer();
+
     viewStudy.classList.add("hidden");
     viewEmptyCreate.classList.add("hidden");
     viewDashboard.classList.remove("hidden");
@@ -872,6 +966,12 @@
 
   async function startDayStudy(dayIdx) {
     state.activeDayIndex = dayIdx;
+
+    // 進入學習模式：側邊欄收起為抽屜，左上方顯示漢堡按鈕
+    document.body.classList.add("in-study-mode");
+    btnToggleDrawer.classList.remove("hidden");
+    closeDrawer();
+
     viewDashboard.classList.add("hidden");
     viewEmptyCreate.classList.add("hidden");
     viewStudy.classList.remove("hidden");
