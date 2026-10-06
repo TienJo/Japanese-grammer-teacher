@@ -21,7 +21,7 @@
       background: #f8fafc;
       color: #1e293b;
       height: 100vh;
-轉ㄓ      display: flex;
+      display: flex;
       flex-direction: column;
     }
     header {
@@ -991,7 +991,7 @@
     displayMeaning.textContent = "查詢翻譯中...";
 
     // 若輸入為純假名，本地端 0ms 轉換
-    const isPureKana = /^[\u3040-\u30ff\s]+$/.test(text);
+    const isPureKana = /^[\u3040-\u30ff\s\u3000-\u303f]+$/.test(text);
 
     try {
       if (isPureKana) {
@@ -999,55 +999,77 @@
         displayHiragana.textContent = hira;
 
         // 免費查詢中文意思
-        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(text)}`);
+        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dj=1&q=${encodeURIComponent(text)}`);
         const transData = await transRes.json();
         let meaning = "";
-        if (Array.isArray(transData) && Array.isArray(transData[0])) {
+        if (transData && Array.isArray(transData.sentences)) {
+          meaning = transData.sentences.map(s => s.trans || "").join("").trim();
+        } else if (Array.isArray(transData) && Array.isArray(transData[0])) {
           meaning = transData[0].map(item => item && item[0] ? item[0] : "").join("").trim();
         }
         displayMeaning.textContent = meaning || "（日語假名讀音）";
         return;
       }
 
-      // 針對日語漢字：精確分離讀音與中文翻譯，徹底杜絕中文拼音干擾
-      // 1. tl=ja&dt=rm：專門取得純日語讀音羅馬字（無任何中文拼音）
-      // 2. tl=zh-TW&dt=t：專門取得繁體中文翻譯
+      // 針對日語漢字：透過 Google 免費 transliteration API (dt=rm&dj=1) 精確提取日語漢字的羅馬字讀音 (src_translit)
+      // 同步取得中文翻譯 (tl=zh-TW&dt=t&dj=1)
       const [readingRes, transRes] = await Promise.all([
-        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ja&dt=rm&q=${encodeURIComponent(text)}`),
-        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(text)}`)
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=en&dt=rm&dj=1&q=${encodeURIComponent(text)}`),
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&dj=1&q=${encodeURIComponent(text)}`)
       ]);
 
       const [readingData, transData] = await Promise.all([readingRes.json(), transRes.json()]);
 
-      // 提取日語羅馬字讀音
+      // 提取日語羅馬字讀音 (src_translit)
       let jaRomaji = "";
-      if (Array.isArray(readingData) && Array.isArray(readingData[0])) {
-        readingData[0].forEach(seg => {
-          if (!seg) return;
-          if (seg[2] && typeof seg[2] === "string") {
-            jaRomaji += seg[2] + " ";
+      if (readingData && Array.isArray(readingData.sentences)) {
+        readingData.sentences.forEach(s => {
+          if (s && s.src_translit) {
+            jaRomaji += s.src_translit + " ";
           }
         });
       }
 
+      // 備援：若結構不同，深入遍歷尋找羅馬字
+      if (!jaRomaji.trim() && Array.isArray(readingData)) {
+        const extractStrings = (node) => {
+          if (!node) return;
+          if (typeof node === "string" && /^[a-zA-ZāēīōūĀĒĪŌŪ\s,.'"-]+$/.test(node) && node.length > 1) {
+            jaRomaji += node + " ";
+          } else if (Array.isArray(node)) {
+            node.forEach(extractStrings);
+          }
+        };
+        extractStrings(readingData);
+      }
+
       // 提取中文翻譯
       let translatedText = "";
-      if (Array.isArray(transData) && Array.isArray(transData[0])) {
+      if (transData && Array.isArray(transData.sentences)) {
+        translatedText = transData.sentences.map(s => s.trans || "").join("").trim();
+      } else if (Array.isArray(transData) && Array.isArray(transData[0])) {
         translatedText = transData[0].map(item => item && item[0] ? item[0] : "").join("").trim();
       }
 
-      // 使用 Wanakana 將日語羅馬字轉為平假名
+      // 將日語羅馬字規範化（處理長音 macron）後，轉成完整的平假名
       jaRomaji = normalizeMacron(jaRomaji.trim());
       let hiraganaResult = "";
+
       if (jaRomaji && window.wanakana) {
         hiraganaResult = window.wanakana.toHiragana(jaRomaji);
-      } else if (window.wanakana) {
-        hiraganaResult = window.wanakana.toHiragana(text);
-      } else {
-        hiraganaResult = katakanaToHiragana(text);
       }
 
-      displayHiragana.textContent = hiraganaResult || text;
+      // 若成功解析出平假名且不含漢字，直接採用；若仍有漢字未被替換，則做最後淨化處理
+      if (hiraganaResult && !/[\u4e00-\u9faf]/.test(hiraganaResult)) {
+        displayHiragana.textContent = hiraganaResult;
+      } else if (hiraganaResult) {
+        displayHiragana.textContent = hiraganaResult;
+      } else if (window.wanakana) {
+        displayHiragana.textContent = window.wanakana.toHiragana(text);
+      } else {
+        displayHiragana.textContent = katakanaToHiragana(text);
+      }
+
       displayMeaning.textContent = translatedText || "日語詞彙 / 短句";
     } catch (err) {
       console.warn("免費解析備援：", err);
