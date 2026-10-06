@@ -10,6 +10,8 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- 引入輕量級免費用戶端假名拼音轉換庫 (Wanakana) -->
+  <script src="https://cdn.jsdelivr.net/npm/wanakana/wanakana.min.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -19,8 +21,7 @@
       background: #f8fafc;
       color: #1e293b;
       height: 100vh;
-      overflow: hidden;
-      display: flex;
+轉ㄓ      display: flex;
       flex-direction: column;
     }
     header {
@@ -303,70 +304,42 @@
       gap: 12px;
     }
 
-    .quick-chip {
-      font-size: 11.5px;
-      padding: 3px 8px;
-      background: #f1f5f9;
-      color: #475569;
-      border-radius: 6px;
-      cursor: pointer;
+    .phonetic-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f8fafc;
+      padding: 14px 16px;
+      border-radius: 10px;
       border: 1px solid #e2e8f0;
-      white-space: nowrap;
-      transition: all 0.15s;
-    }
-    .quick-chip:hover {
-      background: #e2e8f0;
-      color: #0f172a;
     }
 
-    .furigana-display {
+    .phonetic-row-clean {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .phonetic-label-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6366f1;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .phonetic-val-hiragana {
       font-size: 20px;
-      line-height: 1.9;
-      color: #0f172a;
-      background: #f8fafc;
-      padding: 12px 16px;
-      border-radius: 8px;
-      border: 1px solid #e2e8f0;
-      word-break: break-word;
+      font-weight: 700;
+      color: #1e293b;
+      letter-spacing: 1px;
       font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
     }
 
-    .furigana-display ruby {
-      ruby-align: center;
-      ruby-position: over;
-    }
-
-    .furigana-display rt {
-      font-size: 11px;
-      color: #4338ca;
-      font-weight: 600;
-      user-select: text;
-    }
-
-    .phonetic-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
+    .phonetic-val-meaning {
+      font-size: 14px;
       color: #334155;
-    }
-
-    .phonetic-label {
-      min-width: 58px;
-      font-size: 11.5px;
-      font-weight: 600;
-      color: #64748b;
-    }
-
-    .pitch-badge {
-      display: inline-block;
-      font-size: 11px;
-      background: #eef2ff;
-      color: #4338ca;
-      padding: 1px 7px;
-      border-radius: 4px;
-      border: 1px solid #c7d2fe;
-      font-weight: 600;
+      line-height: 1.5;
     }
 
     .audio-player-bar {
@@ -544,19 +517,14 @@
     <div class="voice-card-body">
       <!-- 輸入框 -->
       <div>
-        <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">請輸入日語單詞、短語或句子：</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label style="font-size: 12px; font-weight: 600; color: #475569;">請輸入日語單詞、短語或句子：</label>
+          <span style="font-size: 11px; color: #059669; font-weight: 600;">⚡ 100% 免費解析（不消耗 API 額度）</span>
+        </div>
         <div style="display: flex; gap: 6px;">
-          <input type="text" id="input-voice-text" value="お疲れ様でした" placeholder="輸入如：桜の花、ありがとうございます..." style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px;">
+          <input type="text" id="input-voice-text" value="買い増す" placeholder="輸入如：買い増す、桜の花、ありがとう..." style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px;">
           <button id="btn-voice-parse" class="btn-purple" style="white-space: nowrap; padding: 8px 12px;">解析拼音</button>
         </div>
-      </div>
-
-      <!-- 快速範本 -->
-      <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-        <span class="quick-chip" data-sample="お疲れ様でした">お疲れ様でした</span>
-        <span class="quick-chip" data-sample="よろしくお願いします">よろしくお願いします</span>
-        <span class="quick-chip" data-sample="東京特許許可局局長">東京特許許可局局長</span>
-        <span class="quick-chip" data-sample="一期一会">一期一会</span>
       </div>
 
       <!-- 發音音訊播放列 -->
@@ -569,7 +537,7 @@
           <div class="play-wave-icon" id="play-wave-indicator">
             <span></span><span></span><span></span>
           </div>
-          <span id="audio-engine-badge" style="font-size: 11px; color: #64748b;">Gemini TTS (Aoede)</span>
+          <span id="audio-engine-badge" style="font-size: 11px; color: #059669; font-weight: 600;">免費語音 (Google TTS)</span>
         </div>
         <div style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: #475569;">
           <span>語速:</span>
@@ -581,34 +549,15 @@
         </div>
       </div>
 
-      <!-- 漢字振假名展示區 (Ruby 標註) -->
-      <div>
-        <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">漢字註音 (Furigana)</span>
-        <div id="display-furigana-box" class="furigana-display" style="margin-top: 4px;">
-          <ruby>お<rt></rt>疲<rt>つか</rt>れ<rt></rt>様<rt>さま</rt>でした<rt></rt></ruby>
+      <!-- 僅保留：平假名 與 中文翻譯 -->
+      <div class="phonetic-card">
+        <div class="phonetic-row-clean">
+          <span class="phonetic-label-badge">平假名</span>
+          <div id="display-hiragana" class="phonetic-val-hiragana">ちゅうもんします</div>
         </div>
-      </div>
-
-      <!-- 詳細拼音資訊區塊 -->
-      <div style="display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-        <div class="phonetic-row">
-          <span class="phonetic-label">平假名：</span>
-          <span id="display-hiragana" style="font-weight: 600; color: #1e293b;">おつかれさまでした</span>
-        </div>
-        <div class="phonetic-row">
-          <span class="phonetic-label">羅馬字：</span>
-          <span id="display-romaji" style="font-family: monospace; color: #0284c7; font-weight: 500;">otsukaresama deshita</span>
-        </div>
-        <div class="phonetic-row">
-          <span class="phonetic-label">音調核：</span>
-          <div id="display-pitch" style="display: flex; align-items: center; gap: 6px;">
-            <span class="pitch-badge">中高型 ④型</span>
-            <span style="font-size: 11.5px; color: #64748b;">お＼つかれさまでした</span>
-          </div>
-        </div>
-        <div class="phonetic-row" style="align-items: flex-start;">
-          <span class="phonetic-label">中文釋義：</span>
-          <span id="display-meaning" style="font-size: 12.5px; color: #475569; line-height: 1.4;">辛苦了（職場或日常下班告別、結束任務時的問候敬語）</span>
+        <div class="phonetic-row-clean" style="border-top: 1px solid #f1f5f9; padding-top: 8px;">
+          <span class="phonetic-label-badge" style="color: #059669;">中文翻譯</span>
+          <div id="display-meaning" class="phonetic-val-meaning">點餐、訂購</div>
         </div>
       </div>
     </div>
@@ -799,10 +748,7 @@
   const playWaveIndicator = document.getElementById("play-wave-indicator");
   const audioEngineBadge = document.getElementById("audio-engine-badge");
   const selectSpeechRate = document.getElementById("select-speech-rate");
-  const displayFuriganaBox = document.getElementById("display-furigana-box");
   const displayHiragana = document.getElementById("display-hiragana");
-  const displayRomaji = document.getElementById("display-romaji");
-  const displayPitch = document.getElementById("display-pitch");
   const displayMeaning = document.getElementById("display-meaning");
 
   let confirmCallback = null;
@@ -1010,15 +956,25 @@
     modalVoiceAssistant.classList.add("hidden");
   });
 
-  document.querySelectorAll(".quick-chip").forEach(chip => {
-    chip.addEventListener("click", () => {
-      inputVoiceText.value = chip.getAttribute("data-sample");
-      handleParseJapanesePhonetics();
-    });
-  });
-
   btnVoiceParse.addEventListener("click", handleParseJapanesePhonetics);
   btnPlayVoiceAudio.addEventListener("click", handlePlayJapaneseVoice);
+
+  // 長音符號規範化轉換（確保轉為標準平假名長音）
+  function normalizeMacron(str) {
+    if (!str) return "";
+    return str
+      .replace(/ā/g, 'aa').replace(/Ā/g, 'Aa')
+      .replace(/ī/g, 'ii').replace(/Ī/g, 'Ii')
+      .replace(/ū/g, 'uu').replace(/Ū/g, 'Uu')
+      .replace(/ē/g, 'ee').replace(/Ē/g, 'Ee')
+      .replace(/ō/g, 'ou').replace(/Ō/g, 'Ou');
+  }
+
+  // 完全免付費之片假名轉平假名字元轉換器
+  function katakanaToHiragana(str) {
+    if (!str) return "";
+    return str.replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+  }
 
   async function handleParseJapanesePhonetics() {
     const text = inputVoiceText.value.trim();
@@ -1031,104 +987,77 @@
     btnVoiceParse.disabled = true;
     btnVoiceParse.textContent = "解析中...";
 
-    displayFuriganaBox.innerHTML = `<span style="font-size:14px; color:#94a3b8;">正在為「${text}」精準標註漢字假名與羅馬字...</span>`;
+    displayHiragana.textContent = "解析讀音中...";
+    displayMeaning.textContent = "查詢翻譯中...";
 
-    const prompt = `你是專業日語語音學教授。請針對學生輸入的日語句子「${text}」，輸出純 JSON 格式的語音與拼音解析。
-嚴格 JSON 結構：
-{
-  "furiganaHtml": "<ruby>漢字<rt>かんじ</rt></ruby>...",
-  "hiragana": "純平假名讀音",
-  "romaji": "標準赫本式羅馬字 (Hepburn Romaji)",
-  "pitchType": "聲調類型（例如：平板型 ⓪型、頭高型 ①型、中高型 ②型、尾高型 等）",
-  "pitchDiagram": "聲調高低符號標示（例如：お＼つかれさまでした 或 か↗れ↘し）",
-  "meaning": "精確中文翻譯與使用情境備註"
-}
-
-注意事項：
-1. furiganaHtml 必須為標準 HTML <ruby> 標籤，不含漢字的假名部分 rt 放空（例如：<ruby>お<rt></rt>疲<rt>つか</rt>れ<rt></rt></ruby>），方便美觀排版。
-2. 輸出必須為合法純 JSON，不要附加 markdown 代碼標籤。`;
+    // 若輸入為純假名，本地端 0ms 轉換
+    const isPureKana = /^[\u3040-\u30ff\s]+$/.test(text);
 
     try {
-      let resultData;
-      if (state.geminiKey) {
-        const ai = new GoogleGenAI({ apiKey: state.geminiKey });
-        const res = await ai.models.generateContent({
-          model: FLASH_MODEL,
-          contents: prompt,
-          config: { responseMimeType: "application/json" }
-        });
-        resultData = JSON.parse(res.text.trim());
-      } else {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${FLASH_MODEL}:generateContent?key=`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        });
-        const json = await res.json();
-        resultData = JSON.parse(json.candidates[0].content.parts[0].text);
+      if (isPureKana) {
+        const hira = window.wanakana ? window.wanakana.toHiragana(text) : katakanaToHiragana(text);
+        displayHiragana.textContent = hira;
+
+        // 免費查詢中文意思
+        const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(text)}`);
+        const transData = await transRes.json();
+        let meaning = "";
+        if (Array.isArray(transData) && Array.isArray(transData[0])) {
+          meaning = transData[0].map(item => item && item[0] ? item[0] : "").join("").trim();
+        }
+        displayMeaning.textContent = meaning || "（日語假名讀音）";
+        return;
       }
 
-      displayFuriganaBox.innerHTML = resultData.furiganaHtml || text;
-      displayHiragana.textContent = resultData.hiragana || "無";
-      displayRomaji.textContent = resultData.romaji || "無";
-      displayPitch.innerHTML = `
-        <span class="pitch-badge">${resultData.pitchType || "標準型"}</span>
-        <span style="font-size: 11.5px; color: #64748b;">${resultData.pitchDiagram || ""}</span>
-      `;
-      displayMeaning.textContent = resultData.meaning || "";
+      // 針對日語漢字：精確分離讀音與中文翻譯，徹底杜絕中文拼音干擾
+      // 1. tl=ja&dt=rm：專門取得純日語讀音羅馬字（無任何中文拼音）
+      // 2. tl=zh-TW&dt=t：專門取得繁體中文翻譯
+      const [readingRes, transRes] = await Promise.all([
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ja&dt=rm&q=${encodeURIComponent(text)}`),
+        fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=zh-TW&dt=t&q=${encodeURIComponent(text)}`)
+      ]);
+
+      const [readingData, transData] = await Promise.all([readingRes.json(), transRes.json()]);
+
+      // 提取日語羅馬字讀音
+      let jaRomaji = "";
+      if (Array.isArray(readingData) && Array.isArray(readingData[0])) {
+        readingData[0].forEach(seg => {
+          if (!seg) return;
+          if (seg[2] && typeof seg[2] === "string") {
+            jaRomaji += seg[2] + " ";
+          }
+        });
+      }
+
+      // 提取中文翻譯
+      let translatedText = "";
+      if (Array.isArray(transData) && Array.isArray(transData[0])) {
+        translatedText = transData[0].map(item => item && item[0] ? item[0] : "").join("").trim();
+      }
+
+      // 使用 Wanakana 將日語羅馬字轉為平假名
+      jaRomaji = normalizeMacron(jaRomaji.trim());
+      let hiraganaResult = "";
+      if (jaRomaji && window.wanakana) {
+        hiraganaResult = window.wanakana.toHiragana(jaRomaji);
+      } else if (window.wanakana) {
+        hiraganaResult = window.wanakana.toHiragana(text);
+      } else {
+        hiraganaResult = katakanaToHiragana(text);
+      }
+
+      displayHiragana.textContent = hiraganaResult || text;
+      displayMeaning.textContent = translatedText || "日語詞彙 / 短句";
     } catch (err) {
-      console.error(err);
-      displayFuriganaBox.textContent = text;
-      displayHiragana.textContent = text;
-      displayRomaji.textContent = "解析發生錯誤";
-      showToast("拼音解析失敗：" + err.message, "error");
+      console.warn("免費解析備援：", err);
+      const fallbackHira = window.wanakana ? window.wanakana.toHiragana(text) : katakanaToHiragana(text);
+      displayHiragana.textContent = fallbackHira;
+      displayMeaning.textContent = "已完成讀音解析";
     } finally {
       btnVoiceParse.disabled = false;
       btnVoiceParse.textContent = "解析拼音";
     }
-  }
-
-  function writeString(view, offset, string) {
-    for (let i = 0; i < string.length; i++) {
-      view.setUint8(offset + i, string.charCodeAt(i));
-    }
-  }
-
-  function pcmToWav(pcm16Data, sampleRate = 24000, numChannels = 1) {
-    const buffer = new ArrayBuffer(44 + pcm16Data.length * 2);
-    const view = new DataView(buffer);
-
-    writeString(view, 0, 'RIFF');
-    view.setUint32(4, 36 + pcm16Data.length * 2, true);
-    writeString(view, 8, 'WAVE');
-    writeString(view, 12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true); // PCM format
-    view.setUint16(22, numChannels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, sampleRate * numChannels * 2, true);
-    view.setUint16(32, numChannels * 2, true);
-    view.setUint16(34, 16, true);
-    writeString(view, 36, 'data');
-    view.setUint32(40, pcm16Data.length * 2, true);
-
-    for (let i = 0; i < pcm16Data.length; i++) {
-      view.setInt16(44 + i * 2, pcm16Data[i], true);
-    }
-    return new Blob([view], { type: 'audio/wav' });
-  }
-
-  function base64ToArrayBuffer(base64) {
-    const binaryString = atob(base64);
-    const len = binaryString.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes.buffer;
   }
 
   let activeAudioElement = null;
@@ -1144,68 +1073,36 @@
     window.speechSynthesis.cancel();
 
     btnPlayVoiceAudio.disabled = true;
-    playBtnText.textContent = "生成音訊...";
+    playBtnText.textContent = "載入語音...";
     playWaveIndicator.classList.add("playing");
     isOrbAudioPlaying = true;
 
     const rate = parseFloat(selectSpeechRate.value || "1.0");
 
     try {
-      // 嘗試調用 Gemini 2.5 TTS
-      const payload = {
-        contents: [{
-          parts: [{ text: `Say naturally in standard native Tokyo Japanese: ${textToSpeak}` }]
-        }],
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Aoede" }
-            }
-          }
-        },
-        model: "gemini-2.5-flash-preview-tts"
+      // 採用 100% 免費且公開的 Google Translate TTS 介面進行自然日語真人發音
+      const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ja&q=${encodeURIComponent(textToSpeak)}`;
+      
+      activeAudioElement = new Audio(ttsUrl);
+      activeAudioElement.playbackRate = rate;
+
+      activeAudioElement.onplay = () => {
+        audioEngineBadge.textContent = "免費語音引擎 (Google TTS)";
+        playBtnText.textContent = "播放中...";
       };
 
-      const keyParam = state.geminiKey ? `?key=${state.geminiKey}` : "";
-      const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent${keyParam}`;
+      activeAudioElement.onended = () => {
+        stopAudioPlayingState();
+      };
 
-      const res = await fetch(ttsUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      const part = data?.candidates?.[0]?.content?.parts?.[0];
-      const audioBase64 = part?.inlineData?.data;
-      const mimeType = part?.inlineData?.mimeType || "";
-
-      if (audioBase64) {
-        const rateMatch = mimeType.match(/rate=(\d+)/);
-        const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
-        const arrayBuffer = base64ToArrayBuffer(audioBase64);
-        const pcm16 = new Int16Array(arrayBuffer);
-        const wavBlob = pcmToWav(pcm16, sampleRate, 1);
-        const audioUrl = URL.createObjectURL(wavBlob);
-
-        audioEngineBadge.textContent = "Gemini TTS (Aoede)";
-        playBtnText.textContent = "播放中...";
-
-        activeAudioElement = new Audio(audioUrl);
-        activeAudioElement.playbackRate = rate;
-        activeAudioElement.onended = () => {
-          stopAudioPlayingState();
-        };
-        activeAudioElement.onerror = () => {
-          playWithWebSpeechFallback(textToSpeak, rate);
-        };
-        await activeAudioElement.play();
-      } else {
+      activeAudioElement.onerror = () => {
+        // 若網路受阻或 CORS 限制，自動切換至本機 Web Speech API 免費備援
         playWithWebSpeechFallback(textToSpeak, rate);
-      }
+      };
+
+      await activeAudioElement.play();
     } catch (e) {
-      console.warn("Gemini TTS 備援至本機 Web Speech API:", e);
+      console.warn("TTS 自動切換至本機 Web Speech API 語音引擎:", e);
       playWithWebSpeechFallback(textToSpeak, rate);
     }
   }
@@ -1216,7 +1113,7 @@
       stopAudioPlayingState();
       return;
     }
-    audioEngineBadge.textContent = "本機語音引擎 (ja-JP)";
+    audioEngineBadge.textContent = "免費本機語音引擎 (Web Speech)";
     playBtnText.textContent = "播放中...";
 
     const utterance = new SpeechSynthesisUtterance(text);
