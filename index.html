@@ -3,17 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>日語文法學習工作台</title>
+  <title>日語文法學習工作台與 3D 語音助手</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
   <style>
     * { box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f8fafc; color: #1e293b; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-    header { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 20; height: 56px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      margin: 0; padding: 0;
+      background: #f8fafc;
+      color: #1e293b;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      height: 56px;
+    }
     .header-left { display: flex; align-items: center; gap: 12px; }
     header h1 { margin: 0; font-size: 18px; color: #0f172a; display: flex; align-items: center; gap: 8px; }
     .status-badge { font-size: 12px; background: #ecfdf5; color: #059669; padding: 4px 8px; border-radius: 9999px; font-weight: 500; }
@@ -21,7 +40,17 @@
     #app-layout { display: flex; flex: 1; height: calc(100vh - 56px); overflow: hidden; position: relative; }
     .hidden { display: none !important; }
 
-    button { background: #2563eb; color: #ffffff; border: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+    button {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
     button:hover { background: #1d4ed8; }
     button:disabled { background: #94a3b8; cursor: not-allowed; }
     .btn-green { background: #059669; }
@@ -30,8 +59,10 @@
     .btn-gray:hover { background: #475569; }
     .btn-danger { background: #ef4444; }
     .btn-danger:hover { background: #dc2626; }
+    .btn-purple { background: #6366f1; }
+    .btn-purple:hover { background: #4f46e5; }
 
-    /* 側邊欄樣式：支援課程模式時的抽屜滑出效果 */
+    /* 側邊欄樣式 */
     aside#main-sidebar {
       width: 260px;
       min-width: 260px;
@@ -45,9 +76,7 @@
 
     body.in-study-mode aside#main-sidebar {
       position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
+      top: 0; bottom: 0; left: 0;
       transform: translateX(-100%);
       box-shadow: none;
     }
@@ -66,9 +95,7 @@
       display: none;
     }
 
-    body.in-study-mode.drawer-open #sidebar-overlay {
-      display: block;
-    }
+    body.in-study-mode.drawer-open #sidebar-overlay { display: block; }
 
     .sidebar-header { padding: 16px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
     .sidebar-header h2 { margin: 0; font-size: 15px; }
@@ -144,9 +171,7 @@
     .btn-hamburger { display: none; background: #f1f5f9; border: 1px solid #cbd5e1; color: #1e293b; border-radius: 6px; padding: 5px 9px; font-size: 16px; cursor: pointer; line-height: 1; align-items: center; justify-content: center; }
     .btn-hamburger:hover { background: #e2e8f0; }
 
-    body.in-study-mode .btn-hamburger {
-      display: inline-flex;
-    }
+    body.in-study-mode .btn-hamburger { display: inline-flex; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 50; }
     .modal-box { background: white; padding: 24px; border-radius: 12px; width: 440px; max-width: 90%; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
@@ -174,6 +199,207 @@
       resize: vertical;
       min-height: 38px;
       line-height: 1.4;
+    }
+
+    #floating-orb-wrapper {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 42px;
+      height: 42px;
+      z-index: 900;
+      cursor: grab;
+      user-select: none;
+      filter: drop-shadow(0 3px 8px rgba(79, 70, 229, 0.28));
+      transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    #floating-orb-wrapper:hover {
+      transform: scale(1.06);
+    }
+
+    #floating-orb-wrapper:active {
+      cursor: grabbing;
+      transform: scale(0.96);
+    }
+
+    #orb-canvas-container {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      background: radial-gradient(circle at 35% 35%, #818cf8, #3730a3);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+
+    #orb-canvas-container canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .orb-badge-tip {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    #floating-orb-wrapper:hover .orb-badge-tip {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    #modal-voice-assistant {
+      position: fixed;
+      bottom: 76px;
+      right: 24px;
+      width: 420px;
+      max-width: calc(100vw - 32px);
+      background: #ffffff;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 16px 36px -4px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.03);
+      z-index: 899;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlideUp {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .voice-card-header {
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .voice-card-body {
+      padding: 16px;
+      max-height: 70vh;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .quick-chip {
+      font-size: 11.5px;
+      padding: 3px 8px;
+      background: #f1f5f9;
+      color: #475569;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid #e2e8f0;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .quick-chip:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    .furigana-display {
+      font-size: 20px;
+      line-height: 1.9;
+      color: #0f172a;
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      word-break: break-word;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    }
+
+    .furigana-display ruby {
+      ruby-align: center;
+      ruby-position: over;
+    }
+
+    .furigana-display rt {
+      font-size: 11px;
+      color: #4338ca;
+      font-weight: 600;
+      user-select: text;
+    }
+
+    .phonetic-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .phonetic-label {
+      min-width: 58px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #64748b;
+    }
+
+    .pitch-badge {
+      display: inline-block;
+      font-size: 11px;
+      background: #eef2ff;
+      color: #4338ca;
+      padding: 1px 7px;
+      border-radius: 4px;
+      border: 1px solid #c7d2fe;
+      font-weight: 600;
+    }
+
+    .audio-player-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #eff6ff;
+      border-radius: 8px;
+      border: 1px solid #bfdbfe;
+    }
+
+    .play-wave-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .play-wave-icon span {
+      width: 3px;
+      background: #2563eb;
+      border-radius: 2px;
+      height: 4px;
+      transition: height 0.15s ease;
+    }
+    .play-wave-icon.playing span:nth-child(1) { animation: waveAnim 0.7s infinite alternate 0.1s; }
+    .play-wave-icon.playing span:nth-child(2) { animation: waveAnim 0.7s infinite alternate 0.3s; }
+    .play-wave-icon.playing span:nth-child(3) { animation: waveAnim 0.7s infinite alternate 0.5s; }
+
+    @keyframes waveAnim {
+      0% { height: 4px; }
+      100% { height: 16px; }
     }
   </style>
 </head>
@@ -276,7 +502,7 @@
           </div>
         </div>
 
-        <!-- 右欄：即時助教問答與隨堂測驗（全部整合於對話流中，只允許點擊按鈕送出） -->
+        <!-- 右欄：即時助教問答與隨堂測驗 -->
         <div class="interactive-panel">
           <div class="interactive-header" style="display: flex; justify-content: space-between; align-items: center;">
             <span>AI 助教對話與隨堂測驗 (Gemini 3 Flash 批改)</span>
@@ -289,7 +515,6 @@
           <div id="chat-box" class="chat-scroll-area"></div>
           <div class="chat-input-bar">
             <div style="display: flex; gap: 6px; align-items: flex-end;">
-              <!-- 提示只能按按鈕送出，防止誤觸 -->
               <textarea id="input-message" rows="1" placeholder="發問或作答... (Enter 鍵正常換行，請點擊右側按鈕發送)" style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;"></textarea>
               <button id="btn-send-message" style="height: 38px;">發送</button>
             </div>
@@ -298,6 +523,95 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- 3D 懸浮球本體 (極簡 42px，無干擾微自轉，支援自訂拖曳) -->
+  <div id="floating-orb-wrapper" title="點擊開啟日語發音與拼音">
+    <div class="orb-badge-tip">發音球</div>
+    <div id="orb-canvas-container"></div>
+  </div>
+
+  <!-- 點擊 3D 球彈出的發音與完整拼音視窗 -->
+  <div id="modal-voice-assistant" class="hidden">
+    <div class="voice-card-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">🎙️</span>
+        <span style="font-size: 14px; font-weight: 700; color: #0f172a;">日語發音與拼音小精靈</span>
+      </div>
+      <button id="btn-close-voice-modal" style="background: transparent; color: #94a3b8; font-size: 16px; padding: 2px 6px; border-radius: 4px;">✕</button>
+    </div>
+
+    <div class="voice-card-body">
+      <!-- 輸入框 -->
+      <div>
+        <label style="font-size: 12px; font-weight: 600; color: #475569; display: block; margin-bottom: 6px;">請輸入日語單詞、短語或句子：</label>
+        <div style="display: flex; gap: 6px;">
+          <input type="text" id="input-voice-text" value="お疲れ様でした" placeholder="輸入如：桜の花、ありがとうございます..." style="flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13.5px;">
+          <button id="btn-voice-parse" class="btn-purple" style="white-space: nowrap; padding: 8px 12px;">解析拼音</button>
+        </div>
+      </div>
+
+      <!-- 快速範本 -->
+      <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+        <span class="quick-chip" data-sample="お疲れ様でした">お疲れ様でした</span>
+        <span class="quick-chip" data-sample="よろしくお願いします">よろしくお願いします</span>
+        <span class="quick-chip" data-sample="東京特許許可局局長">東京特許許可局局長</span>
+        <span class="quick-chip" data-sample="一期一会">一期一会</span>
+      </div>
+
+      <!-- 發音音訊播放列 -->
+      <div class="audio-player-bar">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <button id="btn-play-voice-audio" class="btn-purple" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 12.5px;">
+            <span id="play-btn-icon">🔊</span>
+            <span id="play-btn-text">真人朗讀</span>
+          </button>
+          <div class="play-wave-icon" id="play-wave-indicator">
+            <span></span><span></span><span></span>
+          </div>
+          <span id="audio-engine-badge" style="font-size: 11px; color: #64748b;">Gemini TTS (Aoede)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px; font-size: 11.5px; color: #475569;">
+          <span>語速:</span>
+          <select id="select-speech-rate" style="padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; background: #fff;">
+            <option value="0.85">慢速 0.85x</option>
+            <option value="1.0" selected>正常 1.0x</option>
+            <option value="1.15">稍快 1.15x</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 漢字振假名展示區 (Ruby 標註) -->
+      <div>
+        <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">漢字註音 (Furigana)</span>
+        <div id="display-furigana-box" class="furigana-display" style="margin-top: 4px;">
+          <ruby>お<rt></rt>疲<rt>つか</rt>れ<rt></rt>様<rt>さま</rt>でした<rt></rt></ruby>
+        </div>
+      </div>
+
+      <!-- 詳細拼音資訊區塊 -->
+      <div style="display: flex; flex-direction: column; gap: 6px; background: #f8fafc; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div class="phonetic-row">
+          <span class="phonetic-label">平假名：</span>
+          <span id="display-hiragana" style="font-weight: 600; color: #1e293b;">おつかれさまでした</span>
+        </div>
+        <div class="phonetic-row">
+          <span class="phonetic-label">羅馬字：</span>
+          <span id="display-romaji" style="font-family: monospace; color: #0284c7; font-weight: 500;">otsukaresama deshita</span>
+        </div>
+        <div class="phonetic-row">
+          <span class="phonetic-label">音調核：</span>
+          <div id="display-pitch" style="display: flex; align-items: center; gap: 6px;">
+            <span class="pitch-badge">中高型 ④型</span>
+            <span style="font-size: 11.5px; color: #64748b;">お＼つかれさまでした</span>
+          </div>
+        </div>
+        <div class="phonetic-row" style="align-items: flex-start;">
+          <span class="phonetic-label">中文釋義：</span>
+          <span id="display-meaning" style="font-size: 12.5px; color: #475569; line-height: 1.4;">辛苦了（職場或日常下班告別、結束任務時的問候敬語）</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 彈跳視窗：API Key 設定 -->
@@ -473,6 +787,24 @@
   const btnConfirmOk = document.getElementById("btn-confirm-ok");
   const toastContainer = document.getElementById("toast-container");
 
+  // 語音懸浮精靈 DOM 元素
+  const floatingOrbWrapper = document.getElementById("floating-orb-wrapper");
+  const orbCanvasContainer = document.getElementById("orb-canvas-container");
+  const modalVoiceAssistant = document.getElementById("modal-voice-assistant");
+  const btnCloseVoiceModal = document.getElementById("btn-close-voice-modal");
+  const inputVoiceText = document.getElementById("input-voice-text");
+  const btnVoiceParse = document.getElementById("btn-voice-parse");
+  const btnPlayVoiceAudio = document.getElementById("btn-play-voice-audio");
+  const playBtnText = document.getElementById("play-btn-text");
+  const playWaveIndicator = document.getElementById("play-wave-indicator");
+  const audioEngineBadge = document.getElementById("audio-engine-badge");
+  const selectSpeechRate = document.getElementById("select-speech-rate");
+  const displayFuriganaBox = document.getElementById("display-furigana-box");
+  const displayHiragana = document.getElementById("display-hiragana");
+  const displayRomaji = document.getElementById("display-romaji");
+  const displayPitch = document.getElementById("display-pitch");
+  const displayMeaning = document.getElementById("display-meaning");
+
   let confirmCallback = null;
 
   function showToast(text, type = "info") {
@@ -516,12 +848,8 @@
   btnCancelNewProject.addEventListener("click", () => modalNewProject.classList.add("hidden"));
   btnConfirmCreateProject.addEventListener("click", () => executeCreateProject(inputNewGoal.value, inputNewDays.value, btnConfirmCreateProject, modalNewProject));
   btnEmptyCreate.addEventListener("click", () => executeCreateProject(inputEmptyGoal.value, inputEmptyDays.value, btnEmptyCreate, null));
-  
   btnBackCardsLeft.addEventListener("click", showCardsDashboard);
-
-  // 重要設定：點擊發送按鈕才會送出，Enter 鍵一律維持預設換行行為，防止誤觸
   btnSendMessage.addEventListener("click", handleSendMessage);
-
   btnTriggerQuiz.addEventListener("click", handleStartInChatQuiz);
 
   btnToggleSidebar.addEventListener("click", () => {
@@ -552,6 +880,364 @@
       state.appData.settings.detailLevel = val;
       saveProgressToDrive();
     });
+  }
+
+  let currentParsedJapanese = "お疲れ様でした";
+  let orbScene, orbCamera, orbRenderer, orbSphere, orbInnerGlow;
+  let isOrbAudioPlaying = false;
+
+  function initThreeOrb() {
+    const size = 42; // 精巧緊湊尺寸
+    orbScene = new THREE.Scene();
+
+    orbCamera = new THREE.PerspectiveCamera(40, 1, 0.1, 50);
+    orbCamera.position.z = 2.8;
+
+    orbRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    orbRenderer.setSize(size, size);
+    orbRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    orbCanvasContainer.appendChild(orbRenderer.domElement);
+
+    // 主體外球：極簡圓潤、優雅細膩的靛青色漸層
+    const sphereGeo = new THREE.SphereGeometry(0.95, 32, 32);
+    const sphereMat = new THREE.MeshPhongMaterial({
+      color: 0x6366f1,
+      emissive: 0x312e81,
+      specular: 0xffffff,
+      shininess: 90,
+      transparent: true,
+      opacity: 0.95
+    });
+    orbSphere = new THREE.Mesh(sphereGeo, sphereMat);
+    orbScene.add(orbSphere);
+
+    // 內層微光柔和球體
+    const innerGeo = new THREE.SphereGeometry(0.5, 16, 16);
+    const innerMat = new THREE.MeshBasicMaterial({
+      color: 0xe0e7ff,
+      transparent: true,
+      opacity: 0.45
+    });
+    orbInnerGlow = new THREE.Mesh(innerGeo, innerMat);
+    orbScene.add(orbInnerGlow);
+
+    // 柔和雙向燈光
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    orbScene.add(ambientLight);
+
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.85);
+    keyLight.position.set(1.5, 2, 2.5);
+    orbScene.add(keyLight);
+
+    // 平緩輕柔的極簡轉動
+    let clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+
+      // 平緩平順的自轉（音訊播放時微加速，平常維持寧靜慢轉）
+      const speed = isOrbAudioPlaying ? 0.025 : 0.007;
+      orbSphere.rotation.y += speed;
+
+      // 播放時呈現輕柔微幅心跳律動
+      const scaleVal = isOrbAudioPlaying
+        ? 1.0 + Math.sin(elapsed * 5) * 0.04
+        : 1.0;
+      orbSphere.scale.set(scaleVal, scaleVal, scaleVal);
+
+      orbRenderer.render(orbScene, orbCamera);
+    }
+    animate();
+  }
+
+  let isDragging = false;
+  let dragStartX, dragStartY, initialLeft, initialTop;
+  let hasMoved = false;
+
+  floatingOrbWrapper.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    hasMoved = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+
+    const rect = floatingOrbWrapper.getBoundingClientRect();
+    initialLeft = rect.left;
+    initialTop = rect.top;
+
+    floatingOrbWrapper.style.bottom = "auto";
+    floatingOrbWrapper.style.right = "auto";
+    floatingOrbWrapper.style.left = `${initialLeft}px`;
+    floatingOrbWrapper.style.top = `${initialTop}px`;
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      hasMoved = true;
+    }
+    const newLeft = Math.max(10, Math.min(window.innerWidth - 50, initialLeft + dx));
+    const newTop = Math.max(10, Math.min(window.innerHeight - 50, initialTop + dy));
+    floatingOrbWrapper.style.left = `${newLeft}px`;
+    floatingOrbWrapper.style.top = `${newTop}px`;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+    }
+  });
+
+  // 點擊懸浮球切換語音助手卡片 (僅在非拖曳時觸發)
+  floatingOrbWrapper.addEventListener("click", () => {
+    if (hasMoved) return;
+    const isHidden = modalVoiceAssistant.classList.contains("hidden");
+    if (isHidden) {
+      modalVoiceAssistant.classList.remove("hidden");
+      // 自適應貼近懸浮球位置
+      const rect = floatingOrbWrapper.getBoundingClientRect();
+      const targetBottom = Math.max(20, window.innerHeight - rect.top + 10);
+      const targetRight = Math.max(20, window.innerWidth - rect.right);
+      modalVoiceAssistant.style.bottom = `${targetBottom}px`;
+      modalVoiceAssistant.style.right = `${targetRight}px`;
+    } else {
+      modalVoiceAssistant.classList.add("hidden");
+    }
+  });
+
+  btnCloseVoiceModal.addEventListener("click", () => {
+    modalVoiceAssistant.classList.add("hidden");
+  });
+
+  document.querySelectorAll(".quick-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      inputVoiceText.value = chip.getAttribute("data-sample");
+      handleParseJapanesePhonetics();
+    });
+  });
+
+  btnVoiceParse.addEventListener("click", handleParseJapanesePhonetics);
+  btnPlayVoiceAudio.addEventListener("click", handlePlayJapaneseVoice);
+
+  async function handleParseJapanesePhonetics() {
+    const text = inputVoiceText.value.trim();
+    if (!text) {
+      showToast("請輸入要查詢的日語文字！", "error");
+      return;
+    }
+
+    currentParsedJapanese = text;
+    btnVoiceParse.disabled = true;
+    btnVoiceParse.textContent = "解析中...";
+
+    displayFuriganaBox.innerHTML = `<span style="font-size:14px; color:#94a3b8;">正在為「${text}」精準標註漢字假名與羅馬字...</span>`;
+
+    const prompt = `你是專業日語語音學教授。請針對學生輸入的日語句子「${text}」，輸出純 JSON 格式的語音與拼音解析。
+嚴格 JSON 結構：
+{
+  "furiganaHtml": "<ruby>漢字<rt>かんじ</rt></ruby>...",
+  "hiragana": "純平假名讀音",
+  "romaji": "標準赫本式羅馬字 (Hepburn Romaji)",
+  "pitchType": "聲調類型（例如：平板型 ⓪型、頭高型 ①型、中高型 ②型、尾高型 等）",
+  "pitchDiagram": "聲調高低符號標示（例如：お＼つかれさまでした 或 か↗れ↘し）",
+  "meaning": "精確中文翻譯與使用情境備註"
+}
+
+注意事項：
+1. furiganaHtml 必須為標準 HTML <ruby> 標籤，不含漢字的假名部分 rt 放空（例如：<ruby>お<rt></rt>疲<rt>つか</rt>れ<rt></rt></ruby>），方便美觀排版。
+2. 輸出必須為合法純 JSON，不要附加 markdown 代碼標籤。`;
+
+    try {
+      let resultData;
+      if (state.geminiKey) {
+        const ai = new GoogleGenAI({ apiKey: state.geminiKey });
+        const res = await ai.models.generateContent({
+          model: FLASH_MODEL,
+          contents: prompt,
+          config: { responseMimeType: "application/json" }
+        });
+        resultData = JSON.parse(res.text.trim());
+      } else {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${FLASH_MODEL}:generateContent?key=`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+        const json = await res.json();
+        resultData = JSON.parse(json.candidates[0].content.parts[0].text);
+      }
+
+      displayFuriganaBox.innerHTML = resultData.furiganaHtml || text;
+      displayHiragana.textContent = resultData.hiragana || "無";
+      displayRomaji.textContent = resultData.romaji || "無";
+      displayPitch.innerHTML = `
+        <span class="pitch-badge">${resultData.pitchType || "標準型"}</span>
+        <span style="font-size: 11.5px; color: #64748b;">${resultData.pitchDiagram || ""}</span>
+      `;
+      displayMeaning.textContent = resultData.meaning || "";
+    } catch (err) {
+      console.error(err);
+      displayFuriganaBox.textContent = text;
+      displayHiragana.textContent = text;
+      displayRomaji.textContent = "解析發生錯誤";
+      showToast("拼音解析失敗：" + err.message, "error");
+    } finally {
+      btnVoiceParse.disabled = false;
+      btnVoiceParse.textContent = "解析拼音";
+    }
+  }
+
+  function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  }
+
+  function pcmToWav(pcm16Data, sampleRate = 24000, numChannels = 1) {
+    const buffer = new ArrayBuffer(44 + pcm16Data.length * 2);
+    const view = new DataView(buffer);
+
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + pcm16Data.length * 2, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numChannels * 2, true);
+    view.setUint16(32, numChannels * 2, true);
+    view.setUint16(34, 16, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, pcm16Data.length * 2, true);
+
+    for (let i = 0; i < pcm16Data.length; i++) {
+      view.setInt16(44 + i * 2, pcm16Data[i], true);
+    }
+    return new Blob([view], { type: 'audio/wav' });
+  }
+
+  function base64ToArrayBuffer(base64) {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
+  let activeAudioElement = null;
+
+  async function handlePlayJapaneseVoice() {
+    const textToSpeak = inputVoiceText.value.trim() || currentParsedJapanese;
+    if (!textToSpeak) return;
+
+    if (activeAudioElement) {
+      activeAudioElement.pause();
+      activeAudioElement = null;
+    }
+    window.speechSynthesis.cancel();
+
+    btnPlayVoiceAudio.disabled = true;
+    playBtnText.textContent = "生成音訊...";
+    playWaveIndicator.classList.add("playing");
+    isOrbAudioPlaying = true;
+
+    const rate = parseFloat(selectSpeechRate.value || "1.0");
+
+    try {
+      // 嘗試調用 Gemini 2.5 TTS
+      const payload = {
+        contents: [{
+          parts: [{ text: `Say naturally in standard native Tokyo Japanese: ${textToSpeak}` }]
+        }],
+        generationConfig: {
+          responseModalities: ["AUDIO"],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: "Aoede" }
+            }
+          }
+        },
+        model: "gemini-2.5-flash-preview-tts"
+      };
+
+      const keyParam = state.geminiKey ? `?key=${state.geminiKey}` : "";
+      const ttsUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent${keyParam}`;
+
+      const res = await fetch(ttsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      const part = data?.candidates?.[0]?.content?.parts?.[0];
+      const audioBase64 = part?.inlineData?.data;
+      const mimeType = part?.inlineData?.mimeType || "";
+
+      if (audioBase64) {
+        const rateMatch = mimeType.match(/rate=(\d+)/);
+        const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000;
+        const arrayBuffer = base64ToArrayBuffer(audioBase64);
+        const pcm16 = new Int16Array(arrayBuffer);
+        const wavBlob = pcmToWav(pcm16, sampleRate, 1);
+        const audioUrl = URL.createObjectURL(wavBlob);
+
+        audioEngineBadge.textContent = "Gemini TTS (Aoede)";
+        playBtnText.textContent = "播放中...";
+
+        activeAudioElement = new Audio(audioUrl);
+        activeAudioElement.playbackRate = rate;
+        activeAudioElement.onended = () => {
+          stopAudioPlayingState();
+        };
+        activeAudioElement.onerror = () => {
+          playWithWebSpeechFallback(textToSpeak, rate);
+        };
+        await activeAudioElement.play();
+      } else {
+        playWithWebSpeechFallback(textToSpeak, rate);
+      }
+    } catch (e) {
+      console.warn("Gemini TTS 備援至本機 Web Speech API:", e);
+      playWithWebSpeechFallback(textToSpeak, rate);
+    }
+  }
+
+  function playWithWebSpeechFallback(text, rate) {
+    if (!('speechSynthesis' in window)) {
+      showToast("瀏覽器不支援語音合成！", "error");
+      stopAudioPlayingState();
+      return;
+    }
+    audioEngineBadge.textContent = "本機語音引擎 (ja-JP)";
+    playBtnText.textContent = "播放中...";
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "ja-JP";
+    utterance.rate = rate;
+
+    utterance.onend = () => {
+      stopAudioPlayingState();
+    };
+    utterance.onerror = () => {
+      stopAudioPlayingState();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopAudioPlayingState() {
+    isOrbAudioPlaying = false;
+    playWaveIndicator.classList.remove("playing");
+    btnPlayVoiceAudio.disabled = false;
+    playBtnText.textContent = "真人朗讀";
   }
 
   btnOpenSettings.addEventListener("click", () => {
@@ -1008,7 +1694,7 @@
 
 格式嚴格要求：
 1. 請一律使用乾淨清晰的標準 Markdown 格式。
-2. 句型結構與骨架公式請優先使用 Markdown 行內標籤、粗體或清晰符號表示（例如：\`[主語 (あなたが)]\` + \`[對象 (私に)]\` + \`[名詞 を]\` + \`ください\`），嚴禁出現雜亂未編譯的複雜 LaTeX 代碼（如 \\text{}、\\quad 等未處理字串）。若必須使用公式符號，請確保符合標準 LaTeX 數學界定符號 $$...$$。
+2. 句型結構與骨架公式請優先使用 Markdown 行內標籤、粗體或清晰符號表示（例如：\`[主語 (あなたが)]\` + \`[對象 (私に)]\` + \`[名詞 を]\` + \`ください\`），嚴禁出現雜亂未編譯的複雜 LaTeX 代碼。
 3. 嚴格涵蓋以下五大核心模組：
 
 # 【${title}】深度文法解析講義
@@ -1052,7 +1738,7 @@
 
     renderMarkdownContent(lectureContentBox, cachedContent);
 
-    // 處理歷史對話還原與 Gemini Context 載入 (問答與批改固定以 FLASH_MODEL 驅動)
+    // 處理歷史對話還原與 Gemini Context 載入
     const savedChat = currentProj.history[dayIdx].chatHistory || [];
     const geminiChatHistory = [];
 
@@ -1189,7 +1875,6 @@ ${cachedContent}
       document.getElementById(typingId)?.remove();
       appendChatMessage("bot", res.text, true);
 
-      // 自動在輸入框填上題號模版
       inputMessage.rows = 11;
       inputMessage.value = 
 `1. 
@@ -1204,10 +1889,8 @@ ${cachedContent}
 10. 
 Bonus. `;
       inputMessage.focus();
-      // 將游標移至第 1 題之後
       inputMessage.setSelectionRange(3, 3);
 
-      // 自動記錄該天單元進度
       if (currentProj.history[state.activeDayIndex]) {
         currentProj.history[state.activeDayIndex].completed = true;
         if (state.activeDayIndex === currentProj.currentDayIndex && currentProj.currentDayIndex + 1 < currentProj.plan.length) {
@@ -1224,6 +1907,10 @@ Bonus. `;
       btnTriggerQuiz.textContent = "進行今日 10+1 題隨堂測驗 (Gemini 3 Flash)";
     }
   }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    initThreeOrb();
+  });
   </script>
 </body>
 </html>
